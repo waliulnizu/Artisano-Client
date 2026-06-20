@@ -5,17 +5,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState } from "react";
 import { API_URL } from "../../lib/constants";
-
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 // ২. Zod Schema: ফর্মের রুলস সেট করা
 const registerSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  role: z.enum(["user", "artist", "admin"]),
 });
 
 export default function RegisterForm() {
   const [serverError, setServerError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
   
   // ৩. react-hook-form ইনিশিয়ালাইজ করা
   const {
@@ -47,9 +50,13 @@ export default function RegisterForm() {
 
       console.log("Registration Successful!", result);
       // সফল হলে ইউজারকে লগইন পেজে পাঠিয়ে দেওয়া হবে (পরে যোগ করব)
+      router.push("/login");
+      router.refresh();
+      toast.success("Registration Successful!");
       
     } catch (error) {
       setServerError(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -66,13 +73,27 @@ export default function RegisterForm() {
       {/* ৫. handleSubmit ফর্মের ডিফল্ট রিলোড বন্ধ করে onSubmit কে ডেটা পাস করে */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         
+
+        <div>
+  <label className="block text-sm font-medium text-gray-700">Select Role</label>
+  <select
+    {...register("role")} // 📌 এটি react-hook-form এর সাথে কানেক্ট করবে
+    className="mt-1 w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+  >
+    <option value="user">User</option>
+    <option value="artist">Artist</option>
+    <option value="admin">Admin</option>
+  </select>
+  {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role.message}</p>}
+</div>
+
         {/* Name Field */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Full Name</label>
           <input
             {...register("name")} // ৬. ইনপুটকে hook-form এর সাথে কানেক্ট করা
             type="text"
-            className="mt-1 w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+            className="mt-1 w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
             placeholder="John Doe"
           />
           {/* এরর থাকলে দেখানো হবে */}
@@ -85,7 +106,7 @@ export default function RegisterForm() {
           <input
             {...register("email")}
             type="email"
-            className="mt-1 w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+            className="mt-1 w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
             placeholder="john@example.com"
           />
           {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}

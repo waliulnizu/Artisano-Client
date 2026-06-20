@@ -6,6 +6,7 @@ import * as z from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation"; // 📌 ১. Next.js এর নেভিগেশন হুক ইমপোর্ট করা হলো
 import { API_URL } from "../../lib/constants";
+import { toast } from "react-hot-toast";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -42,11 +43,13 @@ export default function LoginForm() {
       
       // 📌 ৪. লগইন সফল হলে ইউজারকে হোমপেজে (/) পাঠিয়ে দেওয়া
       router.push("/"); 
+      toast.success("Login Successful!");
       
       // (নোট: আপনি চাইলে "/" এর বদলে "/dashboard" বা অন্য কোনো পেজের নামও দিতে পারেন)
 
     } catch (error) {
       setServerError(error.message);
+      toast.error(error.message);
     }
   };
 

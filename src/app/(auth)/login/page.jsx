@@ -1,5 +1,6 @@
 import LoginForm from "@/components/auth/LoginForm";
 
+
 export const metadata = {
   title: "Login | Artisano",
   description: "Login to your Artisano account",

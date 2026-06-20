@@ -1,6 +1,6 @@
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar"; // 📌 ১. Navbar ইমপোর্ট করলাম
-
+import { Toaster } from "react-hot-toast";
 export const metadata = {
   title: "Artisano",
   description: "Join our community of artists and art lovers",
@@ -15,6 +15,7 @@ export default function RootLayout({ children }) {
         
         {/* মেইন কন্টেন্ট (যেমন: লগইন পেজ, হোমপেজ) এখানে রেন্ডার হবে */}
         <main className="flex-grow">
+          <Toaster />
           {children}
         </main>
       </body>

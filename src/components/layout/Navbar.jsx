@@ -65,6 +65,18 @@ export default function Navbar() {
             <span className="text-gray-500">Loading...</span>
           ) : user ? (
             <div className="flex items-center gap-4">
+
+            <Link 
+      href="/dashboard" 
+      className="text-blue-600 font-semibold hover:text-blue-800 transition text-sm"
+    >
+      Dashboard
+    </Link>
+
+    {/* 📌 রোল অনুযায়ী অ্যাডমিন লিঙ্ক (যদি ইউজার অ্যাডমিন হয়) */}
+    {user.role === 'admin' && (
+      <Link href="/admin/dashboard" className="text-red-600 text-sm font-bold">Admin Panel</Link>
+    )}
               <span className="text-gray-800 font-medium">
                 Welcome, {user.name}
                 

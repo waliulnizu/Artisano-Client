@@ -1,5 +1,6 @@
 import RegisterForm from "@/components/auth/RegisterForm";
 
+
 export const metadata = {
   title: "Sign Up | Artisano",
   description: "Create a new Artisano account",
