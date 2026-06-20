@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState } from "react";
+import { API_URL } from "../../lib/constants";
 
 // ২. Zod Schema: ফর্মের রুলস সেট করা
 const registerSchema = z.object({
@@ -32,7 +33,7 @@ export default function RegisterForm() {
       // এখানে আমরা ব্যাকএন্ডের API কে কল করব (যা আমরা আগে বানিয়েছি)
       console.log("Submitting to backend:", data);
       
-      const response = await fetch("http://localhost:5000/api/v1/auth/register", {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
