@@ -3,19 +3,30 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "../../lib/constants";
-import { Lock, Crown, CheckCircle, Sparkles, Loader2, ExternalLink, BookOpen, Wrench, FileText } from "lucide-react"; 
+import { Lock, Crown, CheckCircle, Sparkles, Loader2, Crown as CrownIcon } from "lucide-react"; 
 import Link from "next/link";
 import { toast } from "react-hot-toast";
+
+// 🚀 ১. আমাদের তৈরি করা অল-রাউন্ডার আর্ট কার্ড কম্পোনেন্টটি ইম্পোর্ট করা হলো
+import ArtCard from "@/components/ArtCard";
 
 export default function PremiumPage() {
   const [content, setContent] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [isForbidden, setIsForbidden] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null); // 👑 কারেন্ট ইউজার ট্র্যাকার
 
   useEffect(() => {
     const fetchPremiumContent = async () => {
       try {
+        // 👑 ক) উইথ-ক্রেডেনশিয়ালস সহ কারেন্ট ইউজার ডাটা ফেচ
+        const userRes = await axios.get(`${API_URL}/auth/me`, { withCredentials: true }).catch(() => null);
+        if (userRes && userRes.data.success) {
+          setCurrentUser(userRes.data.user);
+        }
+
+        // খ) প্রিমিয়াম ডাটা রিকোয়েস্ট
         const response = await axios.get(`${API_URL}/content/premium-data`, {
           withCredentials: true,
         });
@@ -38,6 +49,7 @@ export default function PremiumPage() {
     fetchPremiumContent();
   }, []);
 
+  // 💳 পেমেন্ট/আপগ্রেড সাবমিট হ্যান্ডলার
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
@@ -59,6 +71,16 @@ export default function PremiumPage() {
     }
   };
 
+  // রিসোর্স ওপেন করার গ্লোবাল মেকানিজম (যা আর্টকার্ডের ভেতর ক্লিক হলে ফায়ার হবে)
+  const handleResourceAccess = (item) => {
+    if (item.resourceLink) {
+      toast.success("Opening VIP resource...");
+      window.open(item.resourceLink, "_blank", "noopener,noreferrer");
+    } else {
+      toast.error("No target resource link attached to this asset.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -68,7 +90,8 @@ export default function PremiumPage() {
     );
   }
 
-  if (isForbidden) {
+  // 🔒 সিনারিও ১: ইউজার যদি ফ্রি মেম্বার হয়, তবে তাকে এই গর্জিয়াস পে-ওয়াল লক স্ক্রিন দেখাবে
+  if (isForbidden || (currentUser && !currentUser.isPremium && currentUser.role !== "admin")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
         <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden text-center relative">
@@ -88,7 +111,7 @@ export default function PremiumPage() {
               You are currently on the <span className="font-bold text-gray-700">Free Plan</span>. Upgrade to Premium to access exclusive tools, resources, and tutorials.
             </p>
             <ul className="text-left space-y-3 mb-8">
-              {["Ad-free experience", "Unlimited premium downloads", "Priority 24/7 support"].map((feature, i) => (
+              {["Exclusive Premium Assets & Tools", "Unlimited source file downloads", "Priority support & updates"].map((feature, i) => (
                 <li key={i} className="flex items-center text-gray-600 text-sm font-medium">
                   <CheckCircle size={18} className="text-green-500 mr-2 flex-shrink-0" />
                   {feature}
@@ -114,17 +137,10 @@ export default function PremiumPage() {
     );
   }
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case "tutorial": return <BookOpen size={20} className="text-blue-500" />;
-      case "tool": return <Wrench size={20} className="text-emerald-500" />;
-      default: return <FileText size={20} className="text-amber-500" />;
-    }
-  };
-
+  // 🎉 সিনারিও ২: ইউজার যদি প্রো মেম্বার হয়, তবে সে সাকসেসফুলি এই প্রিমিয়াম ড্যাশবোর্ড গ্রিড দেখবে
   return (
     <div className="min-h-screen bg-gray-50 p-6 sm:p-10">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
 
         {/* Header Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-6 sm:p-8 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden">
@@ -143,82 +159,22 @@ export default function PremiumPage() {
           </Link>
         </div>
 
-        {/* 📌 ডাইনামিক কন্টেন্ট লিস্ট রেন্ডারিং (The Magic Grid) */}
+        {/* 📌 ডাইনামিক রিইউজেবল কন্টেন্ট গ্রিড রেন্ডারিং */}
         {content.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
-            <p className="text-gray-400 font-medium">No content available at the moment.</p>
+            <p className="text-gray-400 font-medium">No premium content available at the moment.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {content.map((item) => (
-              <div key={item._id} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden">
-                <div>
-                  <div className="w-full h-48 rounded-xl overflow-hidden mb-4 bg-gray-100 border border-gray-50">
-                    <img
-                      src={item.featuredImage}
-                      alt={item.title}
-                      className="w-full h-full object-cover hover:scale-105 transition-all duration-300"
-                    />
-                  </div>
-                  
-                  {/* Category Badge & 📌 ডাইনামিক প্রিমিয়াম ট্যাগ */}
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
-                      {getCategoryIcon(item.category)}
-                      {item.category}
-                    </span>
-                    
-                    {/* 🧠 Developer Thought: এখানে কন্ডিশনাল রেন্ডারিং ব্যবহার করে Pro Only ও Free Access ব্যাজ আলাদা করা হলো */}
-                    {item.isPremiumOnly ? (
-                      <span className="flex items-center gap-1 text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-1 rounded-lg">
-                        <Sparkles size={12} /> PRO ONLY
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                        FREE ACCESS
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Title & Description */}
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-6 line-clamp-3 leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
-
-                {/* Footer Section: Author Info & Action Button */}
-                <div className="border-t border-gray-50 pt-4 flex justify-between items-center mt-auto">
-                  <div className="flex items-center gap-2">
-                    {item.author?.avatar ? (
-                      <img src={item.author.avatar} alt={item.author.name} className="w-8 h-8 rounded-full border object-cover" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
-                        {item.author?.name?.charAt(0)}
-                      </div>
-                    )}
-                    <span className="text-xs font-semibold text-gray-500">By {item.author?.name || "Admin"}</span>
-                  </div>
-
-                  {/* Resource Action Button */}
-                  <button
-                    onClick={() => {
-                      if (item.resourceLink) {
-                        toast.success("Opening resource...");
-                        window.open(item.resourceLink, "_blank", "noopener,noreferrer");
-                      } else {
-                        toast.error("No external link provided for this resource.");
-                      }
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-4 py-2.5 rounded-xl transition-all"
-                  >
-                    Access Resource
-                    <ExternalLink size={14} />
-                  </button>
-                </div>
-              </div>
+              // 🚀 আমাদের ম্যাজিক রিইউজেবল ArtCard এখানে বসানো হলো, যা নিজের আপলোড করা প্রিমিয়াম এসেটকে আনলক রাখবে
+              <ArtCard 
+                key={item._id}
+                item={item}
+                currentUser={currentUser}
+                actionLoadingId={null}
+                onResourceAccess={handleResourceAccess}
+              />
             ))}
           </div>
         )}
