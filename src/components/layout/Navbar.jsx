@@ -1,75 +1,83 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { API_URL } from "@/lib/constants";
-import { Crown, LayoutDashboard, FolderKanban, ShieldAlert, LogOut, PlusCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client"; 
+import { API_URL } from "@/lib/constants"; // 🚀 ADD: API_URL কনস্ট্যান্ট
+import { Crown, LayoutDashboard, FolderKanban, ShieldAlert, LogOut, PlusCircle, Settings } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 export default function Navbar() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
+  const router = useRouter();
+  const [customUser, setCustomUser] = useState(null);
+  const [customLoading, setCustomLoading] = useState(true);
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch(`${API_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
+  // Better-Auth সেশন ট্র্যাকিং
+  const { data: session, isPending: isBetterAuthPending } = authClient.useSession();
 
-      if (response.ok) {
-        window.location.href = "/";
-      }
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
+  // 👑 FIX: কাস্টম মেইল লগইন সেশন হাইড্রেশন নোড
+  // session পরিবর্তন হলে (লগইন/লগআউটের পর) custom user আবার fetch হবে
   useEffect(() => {
-    let isMounted = true;
-    const fetchUser = async () => {
+    const fetchCustomUser = async () => {
+      setCustomLoading(true);
       try {
-        const response = await fetch(`${API_URL}/auth/me`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && isMounted) {
-            setCurrentUser(result.user);
-          }
+        const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+        const data = await res.json();
+        if (data.success) {
+          setCustomUser(data.user);
         } else {
-          if (isMounted) setCurrentUser(null);
+          setCustomUser(null);
         }
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
+      } catch (err) {
+        setCustomUser(null);
       } finally {
-        if (isMounted) setLoading(false);
+        setCustomLoading(false);
       }
     };
+    // Better-Auth session pending না হলেই custom check করো
+    if (!isBetterAuthPending) {
+      fetchCustomUser();
+    }
+  }, [isBetterAuthPending, session]); // session বদলালে re-run হবে
 
-    fetchUser();
-    return () => { isMounted = false; };
-  }, [pathname]);
+  // 👑 সেশন মার্জিং ইঞ্জিন: গুগল ইউজার অথবা মেইল ইউজার
+  const currentUser = session?.user || customUser;
+  // 👑 FIX: || ব্যবহার করা হলো - দুটোর যেকোনো একটা loading হলেই spinner দেখাবে
+  const globalLoading = isBetterAuthPending || customLoading;
+
+  // 👑 ইউনিভার্সাল সেশন টার্মিনেশন মেথড (লগআউট হ্যান্ডলার)
+  const handleLogout = async () => {
+    try {
+      if (session) {
+        // ১. যদি Better-Auth ইউজার হয়
+        await authClient.signOut();
+      } else {
+        // ২. যদি ওল্ড কাস্টম মেইল ইউজার হয়
+        await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
+      }
+      toast.success("Logged out successfully.");
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast.error("Logout process met an issue.");
+    }
+  };
 
   return (
     <nav className="bg-white border-b border-slate-100 p-4 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         
-        {/* 🏛️ বাম পাশ: ব্র্যান্ড লোগো */}
         <Link href="/" className="text-2xl font-black text-blue-600 tracking-tight flex-shrink-0">
           Artisano
         </Link>
 
-        {/* 🌐 ডান পাশ: কন্ডিশনাল নেভিগেশন কন্ট্রোলস */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {loading ? (
+          {globalLoading ? (
             <div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
           ) : currentUser ? (
             <>
-              {/* ১. সাধারণ ড্যাশবোর্ড */}
               <Link
                 href="/dashboard"
                 className="text-slate-600 font-bold hover:text-blue-600 transition text-xs sm:text-sm flex items-center gap-1.5"
@@ -78,7 +86,6 @@ export default function Navbar() {
                 <span className="hidden md:inline">Dashboard</span>
               </Link>
 
-              {/* ২. ভিআইপি গ্যালারি */}
               <Link
                 href="/premium"
                 className="flex items-center gap-1.5 text-amber-600 font-extrabold hover:text-amber-700 transition text-xs sm:text-sm border border-amber-200 bg-amber-50/60 px-2.5 py-1.5 rounded-xl shadow-sm"
@@ -87,7 +94,6 @@ export default function Navbar() {
                 VIP Room
               </Link>
 
-              {/* ৩. গ্লোবাল অ্যাডমিন প্যানেল (কেবল অ্যাডমিনের জন্য) */}
               {currentUser.role === "admin" && (
                 <Link
                   href="/dashboard/admin-panel"
@@ -98,7 +104,6 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {/* ৪. মাই স্টুডিও (আর্টিস্ট ও অ্যাডমিনের নিজস্ব কন্টেন্ট CRUD) */}
               {(currentUser.role === "artist" || currentUser.role === "admin") && (
                 <Link
                   href="/dashboard/my-assets"
@@ -109,7 +114,6 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {/* ৫. 👑 ডাইনামিক আপলোড বাটন (২টি বাটনকে মার্জ করে প্রফেশনাল ১টি করা হলো) */}
               {(currentUser.role === "artist" || currentUser.role === "admin") && (
                 <Link
                   href={currentUser.role === "admin" ? "/admin/create-content" : "/dashboard/upload"}
@@ -120,18 +124,27 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {/* ৬. 👤 প্রোফাইল ও লগআউট সেকশন (হিজিবিরি মুক্ত ক্লিন লেআউট) */}
               <div className="flex items-center gap-3 pl-3 border-l border-slate-100">
-                <div className="flex items-center gap-2">
-                  <img
-                    src={currentUser.profileImage || "https://i.ibb.co/4pDNDk1/avatar.png"}
-                    alt={currentUser.name}
-                    className="w-8 h-8 rounded-full border border-slate-200 object-cover shadow-sm hidden sm:inline"
-                  />
-                  <span className="text-slate-800 font-bold text-xs truncate max-w-[80px]">
-                    {currentUser.name?.split(" ")[0]} {/* শুধু ফার্স্ট নেম দেখাবে স্পেস বাঁচাতে */}
+                <Link 
+                  href="/dashboard/settings" 
+                  className="flex items-center gap-2 group cursor-pointer"
+                  title="Go to Account Settings ⚙️"
+                >
+                  <div className="relative">
+                    <img
+                      src={currentUser.image || "https://i.ibb.co/4pDNDk1/avatar.png"} 
+                      alt={currentUser.name}
+                      className="w-8 h-8 rounded-full border border-slate-200 object-cover shadow-sm hidden sm:inline group-hover:border-blue-400 transition-all"
+                    />
+                    <div className="absolute -bottom-1 -right-1 bg-white border border-slate-100 rounded-full p-0.5 shadow-sm hidden md:block group-hover:rotate-45 transition-transform duration-300">
+                      <Settings size={8} className="text-slate-500 group-hover:text-blue-600" />
+                    </div>
+                  </div>
+
+                  <span className="text-slate-800 font-bold text-xs truncate max-w-[80px] group-hover:text-blue-600 transition-colors capitalize">
+                    {currentUser.name?.split(" ")[0]}
                   </span>
-                </div>
+                </Link>
 
                 <button
                   onClick={handleLogout}
@@ -143,7 +156,6 @@ export default function Navbar() {
               </div>
             </>
           ) : (
-            /* লগইন না থাকলে ক্লিয়ার গেটওয়ে */
             <div className="flex gap-2">
               <Link href="/login" className="px-4 py-1.5 text-blue-600 font-bold hover:bg-blue-50 transition text-sm rounded-xl">
                 Login

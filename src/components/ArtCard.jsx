@@ -1,11 +1,14 @@
+"use client";
+
 import { ExternalLink, Lock } from "lucide-react";
+import Link from "next/link"; // 🚀 নেভিগেশনের জন্য Link ইম্পোর্ট করা হলো
 
 export default function ArtCard({ item, currentUser, actionLoadingId, onResourceAccess }) {
   
   // 🛡️ ১. ডিফেন্সিভ গার্ড
   if (!item) return null;
 
-  // 👑 ২. আইডি এক্সট্র্যাক্ট করার পাইপলাইন
+  // 👑 ২. আইডি এক্সট্র্যাক্ট করার পাইপライン
   const authorId = item.author && typeof item.author === 'object' 
     ? (item.author._id || item.author.id) 
     : item.author;
@@ -20,20 +23,29 @@ export default function ArtCard({ item, currentUser, actionLoadingId, onResource
   const isNameMatched = item.author?.name && currentUser?.name && 
     (item.author.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase());
 
-  // গ) চূড়ান্ত ওনারশিপ ডিসিশন
+  // গ) চূড়ান্ত ওনারশিপ ডিসিশন
   const isOwnAsset = isIdMatched || isNameMatched;
 
-  // ঘ) লকিং কন্ডিশন (ইউজার নিজে মেকার হলে, অ্যাডমিন হলে বা প্রিমিয়াম মেম্বার হলে লক হবে না)
+  // ঘ) লকিং কন্ডিশন (ইউজার নিজে মেকার হলে, অ্যাডমিন হলে বা প্রিমিয়াম মেম্বার হলে লক হবে না)
   const isAssetLocked = item.isPremiumOnly && currentUser?.role !== "admin" && !currentUser?.isPremium && !isOwnAsset;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all relative">
       <div>
-        {/* Thumbnail Image */}
+        {/* 🖼️ থাম্বনেইল ইমেজ সেকশন (আপডেট ১: এখানে লিংক র‍্যাপ করা হয়েছে) */}
         <div className="w-full h-44 rounded-xl overflow-hidden mb-4 bg-slate-100 relative">
-          <img src={item.featuredImage || "https://placehold.co/600x400"} alt={item.title || "Artisano Asset"} className="w-full h-full object-cover" />
+          <Link href={`/artwork/${item._id}`} className="cursor-pointer group block w-full h-full">
+            <img 
+              src={item.featuredImage || "https://placehold.co/600x400"} 
+              alt={item.title || "Artisano Asset"} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" 
+            />
+          </Link>
+          
+          {/* ইমেজ লক লেয়ার */}
           {isAssetLocked && (
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center text-white">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center text-white pointer-events-none">
+              {/* 🧠 Note: pointer-events-none দেওয়া হয়েছে যেন লকের ওপর ক্লিক করলেও ইমেজের লিংকে কাজ করে */}
               <div className="bg-slate-900/80 p-2.5 rounded-full shadow-lg">
                 <Lock size={20} className="text-amber-400" />
               </div>
@@ -57,9 +69,16 @@ export default function ArtCard({ item, currentUser, actionLoadingId, onResource
           )}
         </div>
 
-        {/* Title & Description */}
-        <h3 className="text-lg font-bold text-slate-800 mb-1 line-clamp-1">{item.title}</h3>
-        <p className="text-slate-500 text-xs mb-4 line-clamp-2">{item.description}</p>
+        {/* 📝 টাইটেল সেকশন (আপডেট ২: র-টেক্সট সরিয়ে লিংক দিয়ে সাজানো হয়েছে) */}
+        <Link href={`/artwork/${item._id}`} className="block group">
+          <h3 className="text-lg font-bold text-slate-800 mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
+            {item.title}
+          </h3>
+        </Link>
+        <p className="text-slate-500 text-xs mb-2 line-clamp-2">{item.description}</p>
+        <div className="mb-4">
+          <span className="text-sm font-black text-slate-900">${item.price !== undefined ? item.price : "15.00"} <span className="text-[10px] text-slate-400 font-medium">USD</span></span>
+        </div>
       </div>
 
       {/* Footer Component */}

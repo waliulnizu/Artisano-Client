@@ -13,6 +13,8 @@ export default function ArtistUploadPage() {
     title: "",
     description: "",
     category: "Tutorial",
+    // 🧠 🚀 UPDATE: ডিফল্ট "15.00" রিমুভ করে খালি করা হলো যাতে শুধু প্লেসহোল্ডার শো করে
+    price: "",
     isPremiumOnly: false,
     resourceLink: "",
   });
@@ -43,6 +45,7 @@ export default function ArtistUploadPage() {
     data.append("title", formData.title);
     data.append("description", formData.description);
     data.append("category", formData.category);
+    data.append("price", formData.price);
     data.append("isPremiumOnly", formData.isPremiumOnly);
     data.append("resourceLink", formData.resourceLink);
     data.append("featuredImage", file);
@@ -91,7 +94,6 @@ export default function ArtistUploadPage() {
           {/* Title */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Asset Title</label>
-            {/* 👑 📌 ইউআই ফিক্স: text-slate-900, placeholder-slate-400 এবং স্পষ্ট border-slate-300 দেওয়া হলো */}
             <input 
               type="text" 
               name="title" 
@@ -106,7 +108,6 @@ export default function ArtistUploadPage() {
           {/* Description */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Description</label>
-            {/* 👑 📌 ইউআই ফিক্স: টাইপ করা টেক্সট স্পষ্ট দেখতে text-slate-900 ও placeholder-slate-400 যুক্ত করা হলো */}
             <textarea 
               name="description" 
               required 
@@ -147,6 +148,23 @@ export default function ArtistUploadPage() {
                 className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white" 
               />
             </div>
+          </div>
+
+          {/* Price Input Section */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Asset Value / Price ($ USD)</label>
+            <input 
+              type="number" 
+              name="price" 
+              required
+              min="0"
+              step="0.01"
+              value={formData.price} 
+              onChange={handleInputChange} 
+              // 🧠 🚀 UPDATE: ইউজার ফ্রেন্ডলি স্পষ্ট প্লেসহোল্ডার টেক্সট যোগ করা হলো
+              placeholder="e.g., 15.00" 
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white" 
+            />
           </div>
 
           {/* File Upload Component */}

@@ -22,6 +22,7 @@ export default function MyAssetsPage() {
   const [category, setCategory] = useState("tutorial");
   const [isPremiumOnly, setIsPremiumOnly] = useState(false);
   const [resourceLink, setResourceLink] = useState("");
+  const [price, setPrice] = useState("");
   const [featuredImage, setFeaturedImage] = useState(null);
 
   // ==========================================
@@ -77,6 +78,7 @@ export default function MyAssetsPage() {
     setCategory(asset.category);
     setIsPremiumOnly(asset.isPremiumOnly);
     setResourceLink(asset.resourceLink || "");
+    setPrice(asset.price !== undefined ? asset.price : "15.00");
     setFeaturedImage(null); // নতুন ইমেজ সিলেক্ট করার জন্য রিসেট করা হলো
     setIsEditModalOpen(true);
   };
@@ -93,6 +95,7 @@ export default function MyAssetsPage() {
     formData.append("title", title);
     formData.append("description", description);
     formData.append("category", category);
+    formData.append("price", price);
     formData.append("isPremiumOnly", isPremiumOnly);
     formData.append("resourceLink", resourceLink);
     if (featuredImage) {
@@ -262,6 +265,20 @@ export default function MyAssetsPage() {
                     {isPremiumOnly ? <><Crown size={14} /> VIP PRO ONLY</> : <><ShieldCheck size={14} /> FREE ACCESS</>}
                   </button>
                 </div>
+              </div>
+
+              {/* Price Field */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Asset Price ($ USD)</label>
+                <input 
+                  type="number" 
+                  value={price} 
+                  onChange={(e) => setPrice(e.target.value)} 
+                  required 
+                  min="0" 
+                  step="0.01"
+                  className="w-full bg-slate-50 text-slate-900 border border-slate-200/80 px-4 py-3 rounded-xl text-sm font-semibold focus:outline-none focus:border-slate-900 transition-all"
+                />
               </div>
 
               {/* Source/Drive Link */}

@@ -13,11 +13,11 @@ export default function AdminCreateContent() {
   const [pageLoading, setPageLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState(null);
 
-  // ফর্মের ডাটা স্টেট
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "tutorial",
+    price: "15.00",
     isPremiumOnly: true,
     resourceLink: "",
     featuredImage: null,
@@ -72,10 +72,10 @@ export default function AdminCreateContent() {
     setLoading(true);
 
     try {
-      const data = new FormData();
       data.append("title", formData.title);
       data.append("description", formData.description);
       data.append("category", formData.category);
+      data.append("price", formData.price);
       data.append("isPremiumOnly", formData.isPremiumOnly);
       data.append("resourceLink", formData.resourceLink);
       if (formData.featuredImage) {
@@ -152,6 +152,12 @@ export default function AdminCreateContent() {
               <label className="block text-sm font-semibold text-slate-300 mb-2">Download/External Link</label>
               <input type="text" name="resourceLink" value={formData.resourceLink} onChange={handleChange} placeholder="https://..." className="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm font-medium" />
             </div>
+          </div>
+
+          {/* Price Input */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">Asset Value / Price ($ USD)</label>
+            <input type="number" name="price" required min="0" step="0.01" value={formData.price} onChange={handleChange} placeholder="e.g., 25.00" className="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm font-medium" />
           </div>
 
           {/* Image Upload */}

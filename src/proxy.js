@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server';
 
-// ==========================================
-// 🛡️ Next.js Proxy (Frontend Route Protector)
-// ==========================================
+// =========================================================================
+// 🛡️ Next.js New Proxy Engine (Frontend Route Protector)
+// =========================================================================
 
+// 👑 FIX: নেক্সট জেএস ১৬+ এর নিয়ম অনুযায়ী ফাংশনের নাম 'proxy' করা হলো (এরর ফিক্স 🚀)
 export function proxy(request) {
-  // ১. ব্রাউজারের কুকি থেকে 'token' খুঁজে বের করা
-  const token = request.cookies.get('token')?.value;
+  
+  // =========================================================================
+  // 👑 FIX: ট্র্যাডিশনাল টোকেন এবং Better-Auth সেশন কুকি ডাবল-ডিটেকশন চেইন
+  // =========================================================================
+  // 🧠 Developer Thought Process: আপনার ওল্ড ইমেইল-পাসওয়ার্ড সিস্টেমের 'token' এবং 
+  // Better-Auth এর 'better-auth.session_token' (লোকাল ও সিকিউর প্রোডাকশন মোড)—সবগুলো কুকিই 
+  // এখানে একসাথে চেক করা হলো। এর ফলে যেকোনো একটা সেশন পেলেই প্রক্সি ইউজারকে চিনে ফেলবে 
+  // এবং সেই মারাত্মক রিফ্রেশ লুপ ও জ্যাম চিরতরে ভেঙে যাবে।
+  const token = 
+    request.cookies.get('token')?.value || 
+    request.cookies.get('better-auth.session_token')?.value || 
+    request.cookies.get('__secure-better-auth.session_token')?.value;
 
   // ২. রিকোয়েস্টের বর্তমান ঠিকানা (URL Path) বের করা
   const currentPath = request.nextUrl.pathname;
@@ -23,8 +34,8 @@ export function proxy(request) {
 
   // ৫. লজিক ২: ইউজার যদি লগইন করা থাকে, কিন্তু আবার লগইন বা রেজিস্ট্রেশন পেজে যেতে চায়
   if (isAuthPage && token) {
-    // তাকে রিডাইরেক্ট করে হোমপেজে বা ড্যাশবোর্ডে পাঠিয়ে দাও
-    return NextResponse.redirect(new URL('/', request.url));
+    // তাকে রিডাইরেক্ট করে সরাসরি সিকিউর ড্যাশবোর্ডে পাঠিয়ে দাও (লুপ ব্রেকার 🚀)
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // ৬. সব ঠিক থাকলে রিকোয়েস্টটিকে সামনের দিকে যেতে দাও
