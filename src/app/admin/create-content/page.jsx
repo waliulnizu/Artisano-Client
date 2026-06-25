@@ -16,7 +16,7 @@ export default function AdminCreateContent() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "tutorial",
+    category: "tutorial", // ডিফল্ট ভ্যালু ছোট হাতের অক্ষরে সিঙ্কড
     price: "15.00",
     isPremiumOnly: true,
     resourceLink: "",
@@ -74,12 +74,11 @@ export default function AdminCreateContent() {
     setLoading(true);
 
     try {
-      // 🎯 ওল্ড ক্যাশ ও গ্লোবাল স্কোপ লিক এড়াতে ঠিক সাবমিটের সময় অবজেক্ট ইনিশিয়েট করা হলো
       const data = new FormData(); 
       
       data.append("title", formData.title);
       data.append("description", formData.description);
-      data.append("category", formData.category);
+      data.append("category", formData.category); // 🎯 অলরেডি ছোট হাতের অক্ষরে সাবমিট হবে
       data.append("price", formData.price);
       data.append("isPremiumOnly", formData.isPremiumOnly);
       data.append("resourceLink", formData.resourceLink);
@@ -94,8 +93,8 @@ export default function AdminCreateContent() {
       });
 
       if (response.data.success) {
-        toast.success("Artwork published to VIP Dashboard!");
-        router.push("/premium");
+        toast.success("Artwork published successfully! 🎉");
+        router.push("/browse"); // 🚀 আপলোড সফল হলে সরাসরি ব্রাউজ গ্যালারিতে রিডাইরেক্ট করা হবে
       }
     } catch (error) {
       console.error(error);
@@ -146,11 +145,15 @@ export default function AdminCreateContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-300 mb-2">Category</label>
+              {/* 👑 [FIX]: অপশন ভ্যালুগুলো সম্পূর্ণ ছোট হাতের অক্ষরে ডাটাবেস ও ফিল্টারের সাথে সিঙ্ক করা হলো */}
               <select name="category" value={formData.category} onChange={handleChange} className="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm font-medium">
                 <option value="tutorial">Tutorial</option>
                 <option value="tool">Tool / Asset</option>
                 <option value="resource">Resource</option>
                 <option value="article">Article</option>
+                <option value="painting">Painting</option>
+                <option value="digital">Digital Art</option>
+                <option value="sculpture">Sculpture</option>
               </select>
             </div>
             
