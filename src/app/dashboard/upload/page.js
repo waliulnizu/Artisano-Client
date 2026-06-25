@@ -12,8 +12,7 @@ export default function ArtistUploadPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "Tutorial",
-    // 🧠 🚀 UPDATE: ডিফল্ট "15.00" রিমুভ করে খালি করা হলো যাতে শুধু প্লেসহোল্ডার শো করে
+    category: "tutorial", // 🎯 গ্লোবাল সিঙ্কের জন্য ডিফল্ট ভ্যালু ছোট হাতের অক্ষরে সেট করা হলো
     price: "",
     isPremiumOnly: false,
     resourceLink: "",
@@ -58,7 +57,7 @@ export default function ArtistUploadPage() {
 
       if (res.data.success) {
         toast.success("Artwork published successfully! 🎉");
-        router.push("/");
+        router.push("/browse"); // 🚀 সাকসেসফুল আপলোড শেষে সরাসরি আমাদের লাইভ গ্যালারিতে রিডাইরেক্ট
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -77,9 +76,9 @@ export default function ArtistUploadPage() {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto bg-white rounded-3xl p-8 border border-slate-200/60 shadow-md">
-        
+
         {/* Back Link */}
-        <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-6 transition-all">
+        <Link href="/browse" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-6 transition-all">
           <ArrowLeft size={14} /> Back to Gallery
         </Link>
 
@@ -90,62 +89,65 @@ export default function ArtistUploadPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          
+
           {/* Title */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Asset Title</label>
-            <input 
-              type="text" 
-              name="title" 
-              required 
-              value={formData.title} 
-              onChange={handleInputChange} 
-              placeholder="e.g., Ultimate Watercolor Brush Pack" 
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white" 
+            <input
+              type="text"
+              name="title"
+              required
+              value={formData.title}
+              onChange={handleInputChange}
+              placeholder="e.g., Ultimate Watercolor Brush Pack"
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white"
             />
           </div>
 
           {/* Description */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Description</label>
-            <textarea 
-              name="description" 
-              required 
-              rows="4" 
-              value={formData.description} 
-              onChange={handleInputChange} 
-              placeholder="Describe your creative asset or tutorial details..." 
+            <textarea
+              name="description"
+              required
+              rows="4"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Describe your creative asset or tutorial details..."
               className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white"
             ></textarea>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Category */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Category</label>
-              <select 
-                name="category" 
-                value={formData.category} 
+            {/* 👑 [FIXED]: onChange হ্যান্ডলার কারেক্ট করা হলো এবং গ্যালারির সাথে ভ্যালু সিঙ্ক করা হলো */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Category</label>
+              <select
+                name="category"
+                value={formData.category}
                 onChange={handleInputChange} 
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 bg-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm font-medium"
               >
-                <option value="Tutorial">Tutorial</option>
-                <option value="Tool">Tool</option>
-                <option value="Resource">Resource</option>
-                <option value="Article">Article</option>
+                <option value="tutorial">Tutorial</option>
+                <option value="tool">Tool / Asset</option>
+                <option value="resource">Resource</option>
+                <option value="article">Article</option>
+                <option value="painting">Painting</option>
+                <option value="digital">Digital Art</option>
+                <option value="sculpture">Sculpture</option>
               </select>
-            </div>
+            </div> 
 
             {/* External Resource Link */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Resource/Drive Link</label>
-              <input 
-                type="url" 
-                name="resourceLink" 
-                value={formData.resourceLink} 
-                onChange={handleInputChange} 
-                placeholder="https://drive.google.com/..." 
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white" 
+              <input
+                type="url"
+                name="resourceLink"
+                value={formData.resourceLink}
+                onChange={handleInputChange}
+                placeholder="https://drive.google.com/..."
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white"
               />
             </div>
           </div>
@@ -153,17 +155,16 @@ export default function ArtistUploadPage() {
           {/* Price Input Section */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Asset Value / Price ($ USD)</label>
-            <input 
-              type="number" 
-              name="price" 
+            <input
+              type="number"
+              name="price"
               required
               min="0"
               step="0.01"
-              value={formData.price} 
-              onChange={handleInputChange} 
-              // 🧠 🚀 UPDATE: ইউজার ফ্রেন্ডলি স্পষ্ট প্লেসহোল্ডার টেক্সট যোগ করা হলো
-              placeholder="e.g., 15.00" 
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white" 
+              value={formData.price}
+              onChange={handleInputChange}
+              placeholder="e.g., 15.00"
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 bg-white"
             />
           </div>
 

@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client"; 
-import { API_URL } from "@/lib/constants"; // 🚀 ADD: API_URL কনস্ট্যান্ট
-import { Crown, LayoutDashboard, FolderKanban, ShieldAlert, LogOut, PlusCircle, Settings } from "lucide-react";
+import { API_URL } from "@/lib/constants"; 
+import { Crown, LayoutDashboard, FolderKanban, ShieldAlert, LogOut, PlusCircle, Settings, Compass } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export default function Navbar() {
@@ -13,11 +13,8 @@ export default function Navbar() {
   const [customUser, setCustomUser] = useState(null);
   const [customLoading, setCustomLoading] = useState(true);
 
-  // Better-Auth সেশন ট্র্যাকিং
   const { data: session, isPending: isBetterAuthPending } = authClient.useSession();
 
-  // 👑 FIX: কাস্টম মেইল লগইন সেশন হাইড্রেশন নোড
-  // session পরিবর্তন হলে (লগইন/লগআউটের পর) custom user আবার fetch হবে
   useEffect(() => {
     const fetchCustomUser = async () => {
       setCustomLoading(true);
@@ -35,25 +32,19 @@ export default function Navbar() {
         setCustomLoading(false);
       }
     };
-    // Better-Auth session pending না হলেই custom check করো
     if (!isBetterAuthPending) {
       fetchCustomUser();
     }
-  }, [isBetterAuthPending, session]); // session বদলালে re-run হবে
+  }, [isBetterAuthPending, session]);
 
-  // 👑 সেশন মার্জিং ইঞ্জিন: গুগল ইউজার অথবা মেইল ইউজার
   const currentUser = session?.user || customUser;
-  // 👑 FIX: || ব্যবহার করা হলো - দুটোর যেকোনো একটা loading হলেই spinner দেখাবে
   const globalLoading = isBetterAuthPending || customLoading;
 
-  // 👑 ইউনিভার্সাল সেশন টার্মিনেশন মেথড (লগআউট হ্যান্ডলার)
   const handleLogout = async () => {
     try {
       if (session) {
-        // ১. যদি Better-Auth ইউজার হয়
         await authClient.signOut();
       } else {
-        // ২. যদি ওল্ড কাস্টম মেইল ইউজার হয়
         await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
       }
@@ -69,11 +60,30 @@ export default function Navbar() {
     <nav className="bg-white border-b border-slate-100 p-4 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         
-        <Link href="/" className="text-2xl font-black text-blue-600 tracking-tight flex-shrink-0">
-          Artisano
-        </Link>
+        {/* 🏢 বাম পাশ: লোগো এবং গ্লোবাল ব্রাউজ গ্যালারি লিংক গেটওয়ে */}
+        <div className="flex items-center gap-6">
+          <Link href="/" className="text-2xl font-black text-blue-600 tracking-tight flex-shrink-0">
+            Artisano
+          </Link>
 
+          {/* 👑 [NEW INTERLINK ADDED]: মেইন সার্চ ও ফিল্টার পেজ গেটওয়ে */}
+          <Link
+            href="/browse"
+            className="text-slate-500 font-bold hover:text-blue-600 transition text-xs sm:text-sm flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl hidden sm:flex shadow-sm"
+          >
+            <Compass size={14} className="text-blue-500" />
+            Explore Gallery
+          </Link>
+        </div>
+
+        {/* 🤝 ডান পাশ: সেশন কন্ট্রোল আইকন ও লিংক সমূহ */}
         <div className="flex items-center gap-3 sm:gap-4">
+          
+          {/* মোবাইল ডিভাইসের জন্য ছোট এক্সপ্লোর আইকন (Responsive Support) */}
+          <Link href="/browse" className="sm:hidden text-slate-500 hover:text-blue-600 p-1.5 transition">
+            <Compass size={18} />
+          </Link>
+
           {globalLoading ? (
             <div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
           ) : currentUser ? (
