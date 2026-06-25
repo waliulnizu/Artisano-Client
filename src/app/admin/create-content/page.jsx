@@ -23,7 +23,7 @@ export default function AdminCreateContent() {
     featuredImage: null,
   });
 
-  // 📌 সিকিউরিটি গার্ড: লগইন ছাড়া এবং অ্যাডমিন ছাড়া এই পেজ অ্যাক্সেস লক করা
+  // 📌 সিকিউরিটি গার্ড: লগইন ছাড়া এবং অ্যাডমিন ছাড়া এই পেজ অ্যাক্সেস লক করা
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
@@ -31,7 +31,6 @@ export default function AdminCreateContent() {
           withCredentials: true,
         });
         
-        // যদি ইউজার লগইন না থাকে বা রোল অ্যাডমিন না হয়, তবে মেইন ড্যাশবোর্ডে পাঠিয়ে দাও
         if (!response.data.success || response.data.user.role !== "admin") {
           toast.error("Unauthorized! Admin access only.");
           router.push("/dashboard");
@@ -58,7 +57,7 @@ export default function AdminCreateContent() {
     const file = e.target.files[0];
     if (file) {
       setFormData((prev) => ({ ...prev, featuredImage: file }));
-      // মেমোরি লিক ফিক্স করার জন্য নিরাপদ প্রিভিউ রিডার
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -67,17 +66,24 @@ export default function AdminCreateContent() {
     }
   };
 
+  // =========================================================================
+  // 👑 FIX & OPTIMIZATION: ক্লিন এবং মেমরি-সেফ সাবমিশন ইঞ্জিন
+  // =========================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // 🎯 ওল্ড ক্যাশ ও গ্লোবাল স্কোপ লিক এড়াতে ঠিক সাবমিটের সময় অবজেক্ট ইনিশিয়েট করা হলো
+      const data = new FormData(); 
+      
       data.append("title", formData.title);
       data.append("description", formData.description);
       data.append("category", formData.category);
       data.append("price", formData.price);
       data.append("isPremiumOnly", formData.isPremiumOnly);
       data.append("resourceLink", formData.resourceLink);
+      
       if (formData.featuredImage) {
         data.append("featuredImage", formData.featuredImage);
       }
