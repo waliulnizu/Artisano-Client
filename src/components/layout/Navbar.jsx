@@ -114,25 +114,7 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {(currentUser.role === "artist" || currentUser.role === "admin") && (
-                <Link
-                  href="/dashboard/my-assets"
-                  className="text-slate-700 font-bold hover:bg-slate-100 border border-slate-200/40 px-2.5 py-1.5 rounded-xl transition text-xs sm:text-sm flex items-center gap-1.5"
-                >
-                  <FolderKanban size={14} />
-                  My Studio
-                </Link>
-              )}
-
-              {(currentUser.role === "artist" || currentUser.role === "admin") && (
-                <Link
-                  href={currentUser.role === "admin" ? "/admin/create-content" : "/dashboard/upload"}
-                  className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
-                >
-                  <PlusCircle size={14} />
-                  Upload
-                </Link>
-              )}
+              
 
               <div className="flex items-center gap-3 pl-3 border-l border-slate-100">
                 <Link 
