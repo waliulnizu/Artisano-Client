@@ -19,14 +19,11 @@ export default function PublicHomepage() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // 👑 📌 মাস্টার ফিক্স ১: credentials: "include" বদলে এক্সিওসের সঠিক নিয়ম withCredentials: true করা হলো
-        // এর ফলে ব্রাউজারের সেশন কুকি ব্যাকএন্ডে পৌঁছাবে এবং কারেন্ট ইউজারকে পারফেক্টলি ডিটেক্ট করতে পারবে।
         const userRes = await axios.get(`${API_URL}/auth/me`, { withCredentials: true }).catch(() => null);
         if (userRes && userRes.data.success) {
           setCurrentUser(userRes.data.user);
         }
 
-        // সব ফ্রি ও প্রিমিয়াম কন্টেন্ট ওপেনলি ফেচ করা
         const response = await axios.get(`${API_URL}/content/public-data`, { withCredentials: true });
         if (response.data.success) {
           setContent(response.data.data);
@@ -50,7 +47,6 @@ export default function PublicHomepage() {
   const handleResourceAccess = async (item) => {
     if (!item) return;
 
-    // 👑 📌 মাস্টার ফিক্স ২: এখানেও ওনারশিপ লজিকটিকে হাইব্রিড (আইডি ও নাম) ব্যাকআপ দেওয়া হলো
     const authorId = item.author && typeof item.author === 'object' ? (item.author._id || item.author.id) : item.author;
     const currentUserId = currentUser ? (currentUser._id || currentUser.id) : null;
 
@@ -59,7 +55,6 @@ export default function PublicHomepage() {
     
     const isOwnAsset = isIdMatched || isNameMatched;
 
-    // ক动态 গেটওয়ে অ্যাক্সেস চেক
     if (!item.isPremiumOnly || isOwnAsset) {
       if (item.resourceLink) {
         window.open(item.resourceLink, "_blank", "noopener,noreferrer");
@@ -99,24 +94,28 @@ export default function PublicHomepage() {
     }
   };
 
+  // 🌙 লোডিং স্ক্রিনে ডার্ক মোড সাপোর্ট যুক্ত করা হলো
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 transition-colors duration-300">
+        <div className="w-10 h-10 border-4 border-blue-600 dark:border-blue-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
+    // 👑 [THE MAIN BG FIX]: মেইন রুট কন্টেইনারে dark:bg-zinc-950 এবং কালার ট্রানজিশন ম্যাপ করা হলো
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 py-12 px-4 sm:px-6 transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
 
         {/* Hero Banner */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-3">
+          {/* 🌙 টেক্সটে dark:text-white দেওয়া হলো */}
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
             Explore Creative Art Assets 🎨
           </h1>
-          <p className="text-slate-500 max-w-xl mx-auto text-sm sm:text-base">
+          {/* 🌙 সাবটাইটেলে dark:text-zinc-400 দেওয়া হলো */}
+          <p className="text-slate-500 dark:text-zinc-400 max-w-xl mx-auto text-sm sm:text-base">
             Discover high-quality tutorials, premium brushes, and raw resources built by professional digital artists.
           </p>
         </div>
@@ -134,7 +133,8 @@ export default function PublicHomepage() {
               />
             ))
           ) : (
-            <p className="text-center text-slate-500 col-span-full py-10">No art assets found.</p>
+            // 🌙 নো ডাটা টেক্সটে ডার্ক কালার সিঙ্ক
+            <p className="text-center text-slate-500 dark:text-zinc-400 col-span-full py-10">No art assets found.</p>
           )}
         </div>
 

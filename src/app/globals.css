@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* 🌙 Tailwind v4 এর জন্য ক্লাস-বেসড ডার্ক মোড কনফিগারেশন */
+@variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
