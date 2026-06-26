@@ -104,15 +104,7 @@ export default function Navbar() {
                 VIP Room
               </Link>
 
-              {currentUser.role === "admin" && (
-                <Link
-                  href="/dashboard/admin-panel"
-                  className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs sm:text-sm px-2.5 py-1.5 rounded-xl border border-rose-200/60 transition-all flex items-center gap-1.5 shadow-sm"
-                >
-                  <ShieldAlert size={14} />
-                  Admin Panel
-                </Link>
-              )}
+              
 
               
 

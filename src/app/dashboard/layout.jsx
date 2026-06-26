@@ -1,40 +1,73 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import axios from "axios";
+import { API_URL } from "@/lib/constants";
 import { LayoutDashboard, Palette, CreditCard, FolderHeart, ShieldAlert, Settings, PlusCircle } from "lucide-react";
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState("user"); // ডিফল্ট রোল 'user'
 
-  // 🗺️ আপনার আসল ফোল্ডার স্ট্রাকচার অনুযায়ী ১০০% সিঙ্কড মেনু আইটেমস
-  const menuItems = [
+  // 🔄 ব্যাকএন্ড থেকে কারেন্ট লগইনড ইউজারের আসল রোলটি রিয়েল-টাইম রিড করা
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/auth/me`, { withCredentials: true });
+        if (res.data.success && res.data.user) {
+          setUserRole(res.data.user.role); // ডাটাবেস থেকে রোল সেট হবে (user / artist / admin)
+        }
+      } catch (error) {
+        console.error("Failed to fetch session role for sidebar alignment:", error);
+      }
+    };
+    checkUserRole();
+  }, []);
+
+  // 🏛️ গ্লোবাল মাস্টার মেনু ডিরেক্টরি (প্রতিটি আইটেমের রোল রিকোয়ারমেন্ট সহ)
+  const masterMenu = [
     { 
       label: "Overview", 
       href: "/dashboard", 
-      icon: <LayoutDashboard size={16} /> 
+      icon: <LayoutDashboard size={16} />,
+      roles: ["user", "artist", "admin"] // সবাই দেখবে
     },
     { 
       label: "My Studio", 
-      href: "/dashboard/my-assets", // 🎯 আপনার ফোল্ডারের সাথে একদম নির্ভুল সিঙ্ক
-      icon: <Palette size={16} /> 
+      href: "/dashboard/my-assets", 
+      icon: <Palette size={16} />,
+      roles: ["artist", "admin"] // 🎨 শুধু আর্টিস্ট ও এডমিন দেখবে
     }, 
     { 
-    label: "Upload Asset", 
-    href: "/dashboard/upload", // 🎯 আপনার তৈরি করা আপলোড পেজের রাউট পাথটি এখানে দিন ভাই
-    icon: <PlusCircle size={16} /> 
-  },
+      label: "Upload Asset", 
+      href: "/dashboard/upload", 
+      icon: <PlusCircle size={16} />,
+      roles: ["artist", "admin"] // 🎨 শুধু আর্টিস্ট ও এডমিন দেখবে
+    },
     { 
       label: "Billing & Payments", 
-      href: "/dashboard/transactions", // 🎯 আপনার তৈরি করা নতুন ট্রানজেকশন পেজ
-      icon: <CreditCard size={16} /> 
+      href: "/dashboard/transactions", 
+      icon: <CreditCard size={16} />,
+      roles: ["user", "artist", "admin"] // সবাই দেখবে
+    },
+    { 
+      label: "Admin Panel", 
+      href: "/dashboard/admin-panel", 
+      icon: <ShieldAlert size={16} />,
+      roles: ["admin"] // 👑 শুধু রুট এডমিন দেখবে
     },
     { 
       label: "Settings", 
-      href: "/dashboard/settings", // 🎯 আপনার স্ট্রাকচারের সেটিংস পেজ
-      icon: <Settings size={16} /> 
+      href: "/dashboard/settings", 
+      icon: <Settings size={16} />,
+      roles: ["user", "artist", "admin"] // সবাই দেখবে
     }
   ];
+
+  // 🎯 [DYNAMIC PRIVILEGE FILTERING]: কারেন্ট ইউজারের রোলের সাথে ম্যাচ করে মেনু জেনারেট করা
+  const menuItems = masterMenu.filter(item => item.roles.includes(userRole));
 
   return (
     <div className="flex min-h-screen bg-slate-50/50 text-slate-800">
@@ -52,9 +85,7 @@ export default function DashboardLayout({ children }) {
           {/* Navigation Links */}
           <nav className="p-4 space-y-1 mt-4">
             {menuItems.map((item) => {
-              // অ্যাক্টিভ স্টেট লজিক ফিক্স
               const isActive = pathname === item.href;
-              
               return (
                 <Link
                   key={item.label}

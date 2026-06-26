@@ -2,180 +2,198 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { API_URL } from "../../lib/constants";
-import { Lock, Crown, CheckCircle, Sparkles, Loader2, Crown as CrownIcon } from "lucide-react"; 
+import { API_URL } from "@/lib/constants";
+import { Crown, CheckCircle2, ShieldCheck, Sparkles, Zap, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "react-hot-toast";
-
-// 🚀 ১. আমাদের তৈরি করা অল-রাউন্ডার আর্ট কার্ড কম্পোনেন্টটি ইম্পোর্ট করা হলো
-import ArtCard from "@/components/ArtCard";
+import { toast } from "react-hot-toast"; // নোটিফিকেশন ফ্রেমওয়ার্ক সিঙ্ক
 
 export default function PremiumPage() {
-  const [content, setContent] = useState([]); 
-  const [loading, setLoading] = useState(true);
-  const [isForbidden, setIsForbidden] = useState(false);
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null); // 👑 কারেন্ট ইউজার ট্র্যাকার
+  const [contents, setContents] = useState([]); 
+  const [isPremiumUser, setIsPremiumUser] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [loadingTier, setLoadingTier] = useState(null);
 
+  // 📥 ১. সেশন ভেরিফিকেশন ও ব্যাকএন্ড থেকে প্রিমিয়াম কন্টেন্ট ডাটা ফেচ
   useEffect(() => {
-    const fetchPremiumContent = async () => {
+    const verifyAndFetch = async () => {
       try {
-        // 👑 ক) উইথ-ক্রেডেনশিয়ালস সহ কারেন্ট ইউজার ডাটা ফেচ
-        const userRes = await axios.get(`${API_URL}/auth/me`, { withCredentials: true }).catch(() => null);
-        if (userRes && userRes.data.success) {
-          setCurrentUser(userRes.data.user);
+        const userRes = await axios.get(`${API_URL}/auth/me`, { withCredentials: true });
+        let isVip = false;
+
+        if (userRes.data.success && userRes.data.user) {
+          const currentUser = userRes.data.user;
+          const tier = currentUser.subscriptionTier || "free";
+          const hasPremiumTier = tier === "pro" || tier === "premium";
+          const hasPremiumFlag = currentUser.isPremium === true;
+
+          if (currentUser.role === "admin" || hasPremiumTier || hasPremiumFlag) {
+            setIsPremiumUser(true);
+            isVip = true;
+          }
         }
 
-        // খ) প্রিমিয়াম ডাটা রিকোয়েস্ট
-        const response = await axios.get(`${API_URL}/content/premium-data`, {
-          withCredentials: true,
-        });
-
-        if (response.data.success) {
-          setContent(response.data.data); 
+        if (isVip) {
+          const contentRes = await axios.get(`${API_URL}/content/premium-data`, { withCredentials: true });
+          if (contentRes.data.success) {
+            setContents(contentRes.data.data || contentRes.data);
+          }
         }
       } catch (error) {
-        if (error.response && error.response.status === 403) {
-          setIsForbidden(true);
-        } else {
-          console.error("Failed to fetch content:", error);
-          toast.error("Failed to load premium content.");
-        }
+        console.error("Verification or fetch failed:", error);
       } finally {
-        setLoading(false);
+        setCheckingAuth(false);
       }
     };
-
-    fetchPremiumContent();
+    verifyAndFetch();
   }, []);
 
-  // 💳 পেমেন্ট/আপগ্রেড সাবমিট হ্যান্ডলার
-  const handleUpgrade = async () => {
-    setUpgradeLoading(true);
+  // =========================================================================
+  // ⚡ [STRIPE ENGINE OVERHAUL]: নতুন লাইভ স্ট্রাইপ চেকআউট হ্যান্ডলার
+  // =========================================================================
+  const handleCheckoutTrigger = async (tierName) => {
+    setLoadingTier(tierName);
+    const stripeToast = toast.loading(`Initializing secure checkout for ${tierName}...`);
+    
     try {
-      const response = await axios.post(`${API_URL}/auth/upgrade`, {}, {
-        withCredentials: true,
-      });
+      // 🚀 ব্যাকএন্ড স্ট্রাইপ এন্ডপয়েন্টে সেশন রিকোয়েস্ট ফায়ার করা
+      const res = await axios.post(
+        `${API_URL}/stripe/create-checkout-session`, 
+        { tierName }, 
+        { withCredentials: true }
+      );
 
-      if (response.data.success) {
-        toast.success("Welcome to Premium! Unlocking VIP features...");
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
+      if (res.data.success && res.data.url) {
+        toast.success("Redirecting to Stripe security vault...", { id: stripeToast });
+        
+        // 🌍 [REDIRECT MATRIX]: ইউজারকে আমাদের সাইট থেকে স্ট্রাইপের নিজস্ব পেমেন্ট পেজে রিডাইরেক্ট করা
+        window.location.href = res.data.url;
+      } else {
+        throw new Error("Stripe parameters missing from gateway response.");
       }
     } catch (error) {
-      console.error("Upgrade failed:", error);
-      toast.error("Upgrade failed. Please try again.");
-    } finally {
-      setUpgradeLoading(false);
+      console.error("STRIPE_GATEWAY_ERROR:", error);
+      toast.error(error.response?.data?.message || "Failed to initialize Stripe engine.", { id: stripeToast });
+      setLoadingTier(null); // বাটন লোডিং স্টেট অফ করা
     }
   };
 
-  // রিসোর্স ওপেন করার গ্লোবাল মেকানিজম (যা আর্টকার্ডের ভেতর ক্লিক হলে ফায়ার হবে)
-  const handleResourceAccess = (item) => {
-    if (item.resourceLink) {
-      toast.success("Opening VIP resource...");
-      window.open(item.resourceLink, "_blank", "noopener,noreferrer");
-    } else {
-      toast.error("No target resource link attached to this asset.");
-    }
-  };
-
-  if (loading) {
+  if (checkingAuth) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-gray-500 font-medium">Unlocking VIP Room...</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
       </div>
     );
   }
 
-  // 🔒 সিনারিও ১: ইউজার যদি ফ্রি মেম্বার হয়, তবে তাকে এই গর্জিয়াস পে-ওয়াল লক স্ক্রিন দেখাবে
-  if (isForbidden || (currentUser && !currentUser.isPremium && currentUser.role !== "admin")) {
+  // =========================================================================
+  // 🛑 কন্ডিশন ক: ইউজার যদি প্রিমিয়াম না হয়, তবে তাকে প্রাইসিং টেবিল দেখাও
+  // =========================================================================
+  if (!isPremiumUser) {
+    const Tiers = [
+      { name: "Starter Spark", price: "0", description: "Explore the community feed.", premium: false, icon: <Zap className="text-slate-400" size={24} />, features: ["Access Free Content", "3 Downloads/day"] },
+      { name: "VIP Premium Pro", price: "29", description: "Unlock the masterclass vaults completely.", premium: true, icon: <Crown className="text-purple-600 animate-pulse" size={24} />, features: ["Unlimited Premium Downloads", "10GB Space limit", "Verified Profile Badge"] },
+      { name: "Studio Enterprise", price: "99", description: "Agency architecture scale.", premium: false, icon: <ShieldCheck className="text-amber-400" size={24} />, features: ["Direct API Gateway", "Dedicated Node Manager"] }
+    ];
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-        <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden text-center relative">
-          <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-8 text-white relative overflow-hidden">
-            <Crown size={48} className="mx-auto mb-3 text-white/90 drop-shadow-md" />
-            <h2 className="text-3xl font-extrabold mb-1">Premium Access</h2>
-            <p className="text-amber-100 text-sm">Unlock the ultimate experience</p>
-          </div>
-          <div className="p-8">
-            <div className="flex justify-center mb-4">
-              <div className="bg-rose-100 p-3 rounded-full text-rose-500">
-                <Lock size={28} />
-              </div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12 px-4 sm:px-6 lg:px-8 text-slate-800">
+        <div className="max-w-6xl mx-auto space-y-12">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-1.5 bg-purple-50 border border-purple-200/50 px-3 py-1.5 rounded-full text-purple-700 text-[10px] font-black tracking-widest uppercase">
+              <Sparkles size={12} className="fill-purple-500" /> Restricted Clearance Area
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">This content is locked</h3>
-            <p className="text-gray-500 text-sm mb-6">
-              You are currently on the <span className="font-bold text-gray-700">Free Plan</span>. Upgrade to Premium to access exclusive tools, resources, and tutorials.
-            </p>
-            <ul className="text-left space-y-3 mb-8">
-              {["Exclusive Premium Assets & Tools", "Unlimited source file downloads", "Priority support & updates"].map((feature, i) => (
-                <li key={i} className="flex items-center text-gray-600 text-sm font-medium">
-                  <CheckCircle size={18} className="text-green-500 mr-2 flex-shrink-0" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={handleUpgrade}
-              disabled={upgradeLoading}
-              className={`w-full text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${
-                upgradeLoading ? "bg-slate-700 cursor-not-allowed" : "bg-gradient-to-r from-slate-900 to-slate-800 hover:scale-[1.02]"
-              }`}
-            >
-              {upgradeLoading ? (
-                <><Loader2 size={18} className="animate-spin text-amber-400" />Processing...</>
-              ) : (
-                <><Sparkles size={18} className="text-amber-400" />Upgrade for $9.99/mo</>
-              )}
-            </button>
+            <h1 className="text-3xl font-black text-slate-950 tracking-tight">Unlock Artisano <span className="text-purple-600">VIP Pro Room</span></h1>
+            <p className="text-slate-500 text-xs sm:text-sm font-medium">This zone contains high-tier digital resources. Choose a configuration below to unlock instant access vectors.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6">
+            {Tiers.map((tier) => (
+              <div key={tier.name} className={`border rounded-3xl p-6 sm:p-8 flex flex-col justify-between bg-white relative ${tier.premium ? "shadow-xl ring-2 ring-purple-600/10" : ""}`}>
+                <div className="space-y-6">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-black">{tier.name}</h3>
+                    <div className="p-2 bg-slate-50 rounded-xl">{tier.icon}</div>
+                  </div>
+                  <div className="pt-2 flex items-baseline">
+                    <span className="text-4xl font-black">${tier.price}</span>
+                    <span className="text-xs font-bold ml-1 text-slate-500">/ mo</span>
+                  </div>
+                  <ul className="space-y-3 pt-4 border-t border-slate-100">
+                    {tier.features.map((f, i) => (
+                      <li key={i} className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                        <CheckCircle2 size={14} className="text-purple-600" /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="pt-8">
+                  <button type="button" disabled={tier.price === "0"} onClick={() => handleCheckoutTrigger(tier.name)} className={`w-full font-black text-xs py-3 rounded-xl uppercase tracking-wider ${tier.price === "0" ? "bg-slate-100 text-slate-400 cursor-not-allowed" : tier.premium ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-slate-900 text-white"}`}>
+                    {loadingTier === tier.name ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : tier.price === "0" ? "Free Member Active" : `Upgrade Node`}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
     );
   }
 
-  // 🎉 সিনারিও ২: ইউজার যদি প্রো মেম্বার হয়, তবে সে সাকসেসফুলি এই প্রিমিয়াম ড্যাশবোর্ড গ্রিড দেখবে
+  // =========================================================================
+  // 🎉 কন্ডিশন খ: ইউজার যদি VIP হয়, তবে নিচের এই আসল কোড রান হবে
+  // =========================================================================
   return (
-    <div className="min-h-screen bg-gray-50 p-6 sm:p-10">
-      <div className="max-w-6xl mx-auto">
-
-        {/* Header Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-6 sm:p-8 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-orange-500"></div>
-          <div className="flex items-center gap-4">
-            <div className="bg-amber-100 p-3 rounded-xl text-amber-600">
-              <Crown size={32} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">VIP Premium Dashboard</h1>
-              <p className="text-gray-500 text-sm">Exclusive Content & Premium Resources For You</p>
-            </div>
+    <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8 text-slate-800">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header Dashboard Panel */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-xl font-black text-slate-900">VIP Premium Dashboard 👑</h1>
+            <p className="text-slate-500 text-xs mt-0.5">Exclusive Content & Premium Resources For You</p>
           </div>
-          <Link href="/dashboard" className="text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition-all">
-            &larr; Back to Dashboard
+          <Link href="/dashboard" className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl transition-all border">
+            Back to Dashboard
           </Link>
         </div>
 
-        {/* 📌 ডাইনামিক রিইউজেবল কন্টেন্ট গ্রিড রেন্ডারিং */}
-        {content.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
-            <p className="text-gray-400 font-medium">No premium content available at the moment.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {content.map((item) => (
-              // 🚀 আমাদের ম্যাজিক রিইউজেবল ArtCard এখানে বসানো হলো, যা নিজের আপলোড করা প্রিমিয়াম এসেটকে আনলক রাখবে
-              <ArtCard 
-                key={item._id}
-                item={item}
-                currentUser={currentUser}
-                actionLoadingId={null}
-                onResourceAccess={handleResourceAccess}
-              />
-            ))}
+        {/* 👥 লাইভ কন্টেন্টカード */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {contents.map((item) => (
+            <div key={item._id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col justify-between">
+              <div>
+                {/* Image Block */}
+                <div className="h-48 w-full bg-slate-100 relative">
+                  <img src={item.mediaUrl || item.image || "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5"} alt={item.title} className="w-full h-full object-cover" />
+                  <span className="absolute bottom-3 left-3 bg-slate-100/90 text-slate-500 font-bold text-[10px] px-2.5 py-1 rounded-md uppercase border">
+                    {item.category || "Asset"}
+                  </span>
+                  <span className="absolute bottom-3 right-3 bg-emerald-50 text-emerald-600 font-bold text-[10px] px-2.5 py-1 rounded-md uppercase border border-emerald-200/50">
+                    {item.isFree ? "Free" : "Pro"}
+                  </span>
+                </div>
+                {/* Details Block */}
+                <div className="p-5 space-y-2">
+                  <h3 className="text-sm font-black text-slate-900 capitalize truncate">{item.title}</h3>
+                  <p className="text-slate-400 text-xs line-clamp-2">{item.description || "No customized parameters provided."}</p>
+                  <p className="text-slate-900 font-black text-xs">${item.price || 0} <span className="text-slate-400 font-semibold text-[10px]">USD</span></p>
+                </div>
+              </div>
+              {/* Card Footer Actions */}
+              <div className="px-5 pb-5 pt-2 border-t border-slate-50 flex justify-between items-center text-[11px] font-bold">
+                <span className="text-slate-400">By {item.author?.name || "A.Bizli"}</span>
+                <a href={item.downloadUrl || "#"} target="_blank" rel="noreferrer" className="bg-slate-950 hover:bg-slate-900 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-1 text-[10px] uppercase font-black">
+                  Access Resource
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* যদি কন্টেন্ট শূন্য হয় তার নোটিফিকেশন */}
+        {contents.length === 0 && (
+          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Premium Masterclasses Synced in Database Vault.</p>
           </div>
         )}
 

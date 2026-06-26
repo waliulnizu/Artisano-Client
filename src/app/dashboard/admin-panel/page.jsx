@@ -6,37 +6,33 @@ import { API_URL } from "@/lib/constants";
 import { ShieldCheck, Users, Crown, Mail, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // 🚀 নেভিগেশনের জন্য ইম্পোর্ট
+import { useRouter } from "next/navigation";
 
 export default function AdminPanelPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
-  const router = useRouter(); // 🚀 রাউটার ইনিশিয়ালাইজ
+  const router = useRouter();
 
   // 📥 ১. সেশন ভেরিফিকেশন ও ডাটা ফেচ
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        // প্রথমে কারেন্ট ইউজারের রোল ভেরিফাই করা
-        const userRes = await axios.get(`${API_URL}/auth/me`, { withCredentials: true }).catch(() => null);
-        
-        // 🛡️ সিকিউরিটি গার্ড: ইউজার যদি লগইন না থাকে বা তার রোল যদি admin না হয়, তাকে ড্যাশবোর্ডে তাড়িয়ে দাও!
-        if (!userRes || !userRes.data.success || userRes.data.user.role !== "admin") {
-          toast.error("Unauthorised Access Denied! 🛑");
-          router.push("/dashboard");
-          return;
-        }
-
-        // ইউজার ১০০% ভ্যালিড এডমিন হলে তখন ডাটাবেস থেকে ইউজার লিস্ট আনা হবে
+        // 🛡️ সিকিউরিটি চেইন ও ডাটাবেস থেকে সরাসরি এডমিন ডাটা রিকোয়েস্ট
         const res = await axios.get(`${API_URL}/auth/admin/users`, { withCredentials: true });
         if (res.data.success) {
           setUsers(res.data.data);
         }
       } catch (error) {
         console.error("Admin Fetch Error:", error);
-        toast.error("Session expired. Please login again.");
-        router.push("/login");
+        // যদি ব্যাকএন্ড ৪০১ বা ৪০৩ (Unauthorized) রিটার্ন করে, তবে তাকে ড্যাশবোর্ডে রিডাইরেক্ট করবে
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          toast.error("Unauthorized Access Denied! 🛑");
+          router.push("/dashboard");
+        } else {
+          toast.error("Session expired. Please login again.");
+          router.push("/login");
+        }
       } finally {
         setLoading(false);
       }
@@ -45,7 +41,7 @@ export default function AdminPanelPage() {
     fetchAllUsers();
   }, [router]);
 
-  // 🔄 ২. রোল অথবা প্রিমিয়াম স্ট্যাটাস লাইভ আপডেট
+  // 🔄 ২. রোল অথবা প্রিমিয়াম স্ট্যাটাস লাইভ আপডেট
   const handleUserUpdate = async (userId, updatedFields) => {
     setActionLoadingId(userId);
     try {
@@ -55,6 +51,7 @@ export default function AdminPanelPage() {
 
       if (res.data.success) {
         toast.success("User controls updated successfully! 🛠️");
+        // স্টেট আপডেট যাতে পেজ রিফ্রেশ ছাড়াই রিয়েল-টাইম ড্রপডাউন চেঞ্জ হয়
         setUsers(users.map((u) => (u._id === userId ? { ...u, ...updatedFields } : u)));
       }
     } catch (error) {
@@ -68,20 +65,20 @@ export default function AdminPanelPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="w-10 h-10 border-4 border-rose-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-3"></div>
         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Verifying Admin Clearance...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 text-slate-800">
+    <div className="min-h-screen bg-slate-50 py-4 px-4 sm:px-6 lg:px-8 text-slate-800">
       <div className="max-w-7xl mx-auto">
 
         {/* Header Navigation Banner */}
         <div className="bg-white border border-slate-100 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <div className="bg-rose-100 text-rose-600 p-3 rounded-2xl shadow-sm shadow-rose-500/10">
+            <div className="bg-purple-100 text-purple-600 p-3 rounded-2xl shadow-sm shadow-purple-500/10">
               <ShieldCheck size={32} />
             </div>
             <div>
@@ -111,7 +108,7 @@ export default function AdminPanelPage() {
             </div>
           </div>
           <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-            <div className="bg-rose-50 text-rose-600 p-3 rounded-xl"><ShieldCheck size={20} /></div>
+            <div className="bg-purple-50 text-purple-600 p-3 rounded-xl"><ShieldCheck size={20} /></div>
             <div>
               <p className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Root Admins</p>
               <p className="text-xl font-black text-slate-900">{users.filter(u => u.role === 'admin').length}</p>
