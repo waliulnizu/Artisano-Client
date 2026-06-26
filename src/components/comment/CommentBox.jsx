@@ -6,43 +6,53 @@ import { Send, Loader2 } from "lucide-react";
 export default function CommentBox({ onCommentSubmit, submitLoading }) {
   const [text, setText] = useState("");
 
-  // 🧠 Developer's Thought: ফর্ম সাবমিট হলে ব্রাউজার যেন রিলোড না নেয় (preventDefault)
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!text.trim()) return; // ফাঁকা কমেন্ট সাবমিট ব্লক করা
-
+  const handleSubmit = () => {
+    if (!text.trim() || submitLoading) return;
     onCommentSubmit(text);
-    setText(""); // কমেন্ট সফলভাবে ট্রিপে পাঠানোর পর ইনপুট বক্স খালি করা
+    setText(""); 
+  };
+
+  // 👑 [NEW INTERCEPTOR]: কিবোর্ডের Enter বাটন প্রেস করলে সাবমিট হ্যান্ডলার ট্রিগার হবে
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // লাইনের ডিফল্ট ব্রেক এড়ানো
+      handleSubmit();
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-8">
-      <div className="flex flex-col gap-2">
-        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-          Share your thoughts
+    <div className="mb-6">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+          Join the artisan discussion
         </label>
-        <div className="relative flex items-center">
+        
+        {/* 🎨 [UI RE-DESIGN]: কালার থিম ফুললি সচল এবং লাক্সারি হোয়াইট লুকে কনভার্ট করা হলো */}
+        <div className="relative flex items-center shadow-sm rounded-2xl overflow-hidden border border-slate-200/80 focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-100/50 transition-all duration-300 bg-white">
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Write a respectful comment..."
+            onKeyDown={handleKeyDown} // 🚀 কিবোর্ড অ্যাকশন লিংক করা হলো
+            placeholder="Share an appreciation or construct feedback..."
             disabled={submitLoading}
-            className="w-full bg-slate-50 border border-slate-200 focus:border-slate-900 text-sm text-slate-800 rounded-2xl pl-5 pr-14 py-4 outline-none transition-all placeholder:text-slate-400 disabled:opacity-60"
+            className="w-full bg-white text-xs sm:text-sm font-medium text-slate-800 rounded-2xl pl-5 pr-14 py-4 outline-none placeholder:text-slate-400 disabled:opacity-50"
           />
+          
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={submitLoading || !text.trim()}
-            className="absolute right-2 p-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-100 text-white disabled:text-slate-400 rounded-xl transition-all active:scale-95"
+            className="absolute right-2 p-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-50 text-white disabled:text-slate-300 rounded-xl transition-all active:scale-95 flex items-center justify-center"
           >
             {submitLoading ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={14} className="animate-spin" />
             ) : (
-              <Send size={16} />
+              <Send size={14} className="stroke-[2.5]" />
             )}
           </button>
         </div>
       </div>
-    </form>
+    </div>
   );
 }
