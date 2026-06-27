@@ -3,29 +3,44 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "@/lib/constants";
-import { ShieldCheck, Users, Crown, Mail, Loader2, ArrowLeft } from "lucide-react";
+import { ShieldCheck, Users, Crown, Mail, Loader2, ArrowLeft, TrendingUp } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+// 📊 Recharts ভিত্তিক নতুন তৈরি করা সাব-কম্পোনেন্টটি ইম্পোর্ট করা হলো
+import AdminSalesChart from "@/components/admin/AdminSalesChart";
+
 export default function AdminPanelPage() {
   const [users, setUsers] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState([]); // 📊 চার্টের ডেটা স্টেট
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const router = useRouter();
 
-  // 📥 ১. সেশন ভেরিফিকেশন ও ডাটা ফেচ
+  // 📥 ১. সেশন ভেরিফিকেশন, ইউজার টেবিল ও অ্যানালিটিক্স চার্ট ডাটা ফেচ
   useEffect(() => {
-    const fetchAllUsers = async () => {
+    const fetchAdminDashboardData = async () => {
       try {
-        // 🛡️ সিকিউরিটি চেইন ও ডাটাবেস থেকে সরাসরি এডমিন ডাটা রিকোয়েস্ট
-        const res = await axios.get(`${API_URL}/auth/admin/users`, { withCredentials: true });
-        if (res.data.success) {
-          setUsers(res.data.data);
+        // ক) ইউজার লিস্ট নিয়ে আসা
+        const usersRes = await axios.get(`${API_URL}/auth/admin/users`, { withCredentials: true });
+        if (usersRes.data.success) {
+          setUsers(usersRes.data.data);
         }
+
+        // খ) 📊 ব্যাকএন্ডের নতুন এন্ডপয়েন্ট থেকে চার্টের অ্যানালিটিক্স ডেটা নিয়ে আসা
+        try {
+          const analyticsRes = await axios.get(`${API_URL}/stripe/admin/sales-analytics`, { withCredentials: true });
+          if (analyticsRes.data.success) {
+            setAnalyticsData(analyticsRes.data.data);
+          }
+        } catch (chartErr) {
+          console.error("Chart Data API Fetch Warning:", chartErr);
+          // চার্ট এপিআই কোনো কারণে ফেইল করলেও যেন মেইন ইউজার টেবিল ক্র্যাশ না করে
+        }
+
       } catch (error) {
         console.error("Admin Fetch Error:", error);
-        // যদি ব্যাকএন্ড ৪০১ বা ৪০৩ (Unauthorized) রিটার্ন করে, তবে তাকে ড্যাশবোর্ডে রিডাইরেক্ট করবে
         if (error.response?.status === 401 || error.response?.status === 403) {
           toast.error("Unauthorized Access Denied! 🛑");
           router.push("/dashboard");
@@ -38,7 +53,7 @@ export default function AdminPanelPage() {
       }
     };
 
-    fetchAllUsers();
+    fetchAdminDashboardData();
   }, [router]);
 
   // 🔄 ২. রোল অথবা প্রিমিয়াম স্ট্যাটাস লাইভ আপডেট
@@ -51,7 +66,6 @@ export default function AdminPanelPage() {
 
       if (res.data.success) {
         toast.success("User controls updated successfully! 🛠️");
-        // স্টেট আপডেট যাতে পেজ রিফ্রেশ ছাড়াই রিয়েল-টাইম ড্রপডাউন চেঞ্জ হয়
         setUsers(users.map((u) => (u._id === userId ? { ...u, ...updatedFields } : u)));
       }
     } catch (error) {
@@ -72,11 +86,11 @@ export default function AdminPanelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-4 px-4 sm:px-6 lg:px-8 text-slate-800">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8 text-slate-800">
+      <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header Navigation Banner */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-4">
             <div className="bg-purple-100 text-purple-600 p-3 rounded-2xl shadow-sm shadow-purple-500/10">
               <ShieldCheck size={32} />
@@ -86,13 +100,21 @@ export default function AdminPanelPage() {
               <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Global governance panel for modifying core memberships, clearance roles, and community status.</p>
             </div>
           </div>
-          <Link href="/dashboard" className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 border border-slate-200/40">
-            <ArrowLeft size={14} /> Back
-          </Link>
+          <div className="flex items-center gap-3">
+            <span className="bg-emerald-600 text-white font-black text-[10px] px-3 py-1.5 rounded-xl shadow-md flex items-center gap-1 uppercase tracking-wider animate-pulse">
+              <TrendingUp size={12} /> Live Metrics
+            </span>
+            <Link href="/dashboard" className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 border border-slate-200/40">
+              <ArrowLeft size={14} /> Back
+            </Link>
+          </div>
         </div>
 
+        {/* 📊 [NEW INJECTION]: রেভিনিউ ও সেলস অ্যানালিটিক্স গ্রাফ চার্ট */}
+        <AdminSalesChart data={analyticsData} />
+
         {/* User Metric Counters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
             <div className="bg-blue-50 text-blue-600 p-3 rounded-xl"><Users size={20} /></div>
             <div>
@@ -118,6 +140,9 @@ export default function AdminPanelPage() {
 
         {/* Data Directory Table */}
         <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-slate-50 bg-white">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Registered User Registry</h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
