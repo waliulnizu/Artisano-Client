@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import axios from "axios";
 import { API_URL } from "@/lib/constants";
 import { LayoutDashboard, Palette, CreditCard, FolderHeart, ShieldAlert, Settings, PlusCircle } from "lucide-react";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
@@ -70,61 +71,63 @@ export default function DashboardLayout({ children }) {
   const menuItems = masterMenu.filter(item => item.roles.includes(userRole));
 
   return (
-    <div className="flex min-h-screen bg-slate-50/50 text-slate-800">
-      
-      {/* 🏛️ FIXED SIDEBAR COMPONENT */}
-      <aside className="w-64 bg-white border-r border-slate-200/60 flex flex-col justify-between fixed h-full z-30">
-        <div>
-          {/* Studio Brand/Header */}
-          <div className="h-20 flex items-center px-6 border-b border-slate-100">
-            <span className="text-base font-black tracking-tight text-slate-950">
-              Artisano <span className="text-purple-600">Studio</span>
-            </span>
+    <ProtectedRoute>
+      <div className="flex min-h-screen bg-slate-50/50 text-slate-800">
+        
+        {/* 🏛️ FIXED SIDEBAR COMPONENT */}
+        <aside className="w-64 bg-white border-r border-slate-200/60 flex flex-col justify-between fixed h-full z-30">
+          <div>
+            {/* Studio Brand/Header */}
+            <div className="h-20 flex items-center px-6 border-b border-slate-100">
+              <span className="text-base font-black tracking-tight text-slate-950">
+                Artisano <span className="text-purple-600">Studio</span>
+              </span>
+            </div>
+
+            {/* Navigation Links */}
+            <nav className="p-4 space-y-1 mt-4">
+              {menuItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black tracking-tight transition-all uppercase ${
+                      isActive
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span className={`${isActive ? "text-white" : "text-slate-400"}`}>
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-1 mt-4">
-            {menuItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black tracking-tight transition-all uppercase ${
-                    isActive
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
-                >
-                  <span className={`${isActive ? "text-white" : "text-slate-400"}`}>
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+          {/* Footer Settings/Exit Quick Nodes */}
+          <div className="p-4 border-t border-slate-100 space-y-1">
+            <Link
+              href="/browse"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black tracking-tight text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all uppercase"
+            >
+              <FolderHeart size={16} />
+              Back to Feed
+            </Link>
+          </div>
+        </aside>
 
-        {/* Footer Settings/Exit Quick Nodes */}
-        <div className="p-4 border-t border-slate-100 space-y-1">
-          <Link
-            href="/browse"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black tracking-tight text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all uppercase"
-          >
-            <FolderHeart size={16} />
-            Back to Feed
-          </Link>
-        </div>
-      </aside>
+        {/* 🚀 DYNAMIC CONTENT WINDOW PANEL */}
+        <main className="flex-1 pl-64 min-h-screen">
+          <div className="p-4 sm:p-8 md:p-10">
+            {children}
+          </div>
+        </main>
 
-      {/* 🚀 DYNAMIC CONTENT WINDOW PANEL */}
-      <main className="flex-1 pl-64 min-h-screen">
-        <div className="p-4 sm:p-8 md:p-10">
-          {children}
-        </div>
-      </main>
-
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }
