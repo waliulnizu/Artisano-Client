@@ -1,38 +1,43 @@
 import { NextResponse } from 'next/server';
 
 // =========================================================================
-// 🛡️ Next.js New Proxy Engine (Frontend Route Protector)
+// 🛡️ Next.js New Proxy Engine (Universal Cookie Reader Mode)
 // =========================================================================
 export function proxy(request) {
   
-  // =========================================================================
-  // 👑 ট্র্যাডিশনাল টোকেন এবং Better-Auth সেশন কুকি ডাবল-ডিটেকশন চেইন
-  // =========================================================================
-  const token = 
+  // ১. স্ট্যান্ডার্ড উপায়ে কুকি রিড করার চেষ্টা
+  let token = 
     request.cookies.get('token')?.value || 
     request.cookies.get('better-auth.session_token')?.value || 
     request.cookies.get('__secure-better-auth.session_token')?.value;
 
-  // ২. রিকোয়েস্টের বর্তমান ঠিকানা (URL Path) বের করা
+  // 👑 [CROSS-DOMAIN FALLBACK]: স্ট্যান্ডার্ড উপায়ে না পেলে র-হেডার থেকে কুকি পার্স করার ট্রিক
+  if (!token) {
+    const rawCookie = request.headers.get('cookie') || '';
+    const match = rawCookie.match(/token=([^;]+)/);
+    if (match) {
+      token = match[1].trim();
+    }
+  }
+
+  // ২. রিকোয়েস্টের বর্তমান ঠিকানা বের করা
   const currentPath = request.nextUrl.pathname;
 
-  // ৩. কোন পেজগুলো লগইন ছাড়া দেখা যাবে না, আর কোনগুলো যাবে, তা ডিফাইন করা
+  // ৩. পেজ গেটওয়ে ক্যাটাগরি ডিফাইন করা
   const isAuthPage = currentPath.startsWith('/login') || currentPath.startsWith('/register');
   const isProtectedPage = currentPath.startsWith('/dashboard') || currentPath === '/profile';
 
-  // ৪. লজিক ১: ইউজার যদি লগইন করা না থাকে এবং প্রটেক্টেড পেজে যেতে চায়
+  // ৪. লজিক ১: লগইন করা না থাকলে প্রটেক্টেড পেজ ব্লক করে লগইনে পাঠানো
   if (isProtectedPage && !token) {
-    // তাকে রিডাইরেক্ট করে লগইন পেজে পাঠিয়ে দাও
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // ৫. লজিক ২: ইউজার যদি লগইন করা থাকে, কিন্তু আবার লগইন বা রেজিস্ট্রেশন পেজে যেতে চায়
+  // ৫. লজিক ২: লগইন করা থাকলে লগইন পেজ ব্লক করে ড্যাশবোর্ডে পাঠানো (লুপ ব্রেকার 🚀)
   if (isAuthPage && token) {
-    // তাকে রিডাইরেক্ট করে সরাসরি সিকিউর ড্যাশবোর্ডে পাঠিয়ে দাও (লুপ ব্রেকার 🚀)
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // ৬. সব ঠিক থাকলে রিকোয়েস্টটিকে সামনের দিকে যেতে দাও
+  // ৬. সব প্যারামিটার পাস হলে রিকোয়েস্টটিকে সামনের দিকে যেতে দাও
   return NextResponse.next();
 }
 
