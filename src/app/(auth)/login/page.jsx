@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client"; // আপনার কারেক্ট করা ক্লায়েন্ট ফাইল পাথ
+import { authClient } from "@/lib/auth-client"; 
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
-import AuthRoleSelector from "@/components/auth/AuthRoleSelector"; // রোল সিলেক্টর কম্পোনেন্ট
+import AuthRoleSelector from "@/components/auth/AuthRoleSelector"; 
 import { Eye, EyeOff, Mail, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { API_URL } from "@/lib/constants";
@@ -21,15 +21,21 @@ export default function LoginPage() {
   const { data: session, isPending } = authClient.useSession();
 
   // =========================================================================
-  // 👑 FIX: isPending ঊর উপর redirect নির্ভর করা - form block করব না
+  // 👑 DYNAMIC REDIRECT GATEWAY: সেশন অথবা কাস্টম কুকি যেকোনো একটি পেলেই রিডাইরেক্ট করবে
   // =========================================================================
   useEffect(() => {
-    if (!isPending && session && session.user) {
-      window.location.href = "/dashboard";
+    // ব্রাউজারে ম্যানুয়াল টোকেন কুকি আছে কি না তা চেক করার ট্রিক
+    const hasLocalToken = typeof document !== "undefined" && document.cookie.includes("token=");
+
+    if (!isPending) {
+      if ((session && session.user) || hasLocalToken) {
+        // 🎯 প্রোফাইল ডাটা মেমরিতে লোড হয়ে গেলে হোমপেজে বা আপনার সঠিক ড্যাশবোর্ডে পাঠাবে
+        window.location.href = "/"; 
+      }
     }
   }, [session, isPending]);
 
-  // 📧 প্রথাগত ইমেইল-পাসওয়ার্ড সাবমিশন হ্যান্ডলার (এক্সিউস / ফেচ এপিআই চেইন)
+  // 📧 প্রথাগত ইমেইল-পাসওয়ার্ড সাবমিশন হ্যান্ডলার
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -42,7 +48,7 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include", // 👑 FIX: server-side httpOnly cookie receive করতে আবশ্যক
+        credentials: "include", 
       });
 
       const data = await response.json();
@@ -51,18 +57,19 @@ export default function LoginPage() {
         toast.success("Identity verified! Entering secure workspace...");
         
         // =========================================================================
-        // 👑 FIX 2: ক্লায়েন্ট-সাইড কাস্টম কুকি এনফোর্সমেন্ট ইঞ্জিন
+        // 👑 FIX 2: ক্রস-ডোমেন প্রোডাকশন ফ্রেন্ডলি কুকি এনফোর্সমেন্ট
         // =========================================================================
         const clientToken = data.token || data.jwt;
         if (clientToken) {
-          const maxAge = 7 * 24 * 60 * 60; // ৭ দিনের জন্য কুকি লাইফলাইন লক
-          document.cookie = `token=${clientToken}; path=/; max-age=${maxAge}; SameSite=Lax`;
+          const maxAge = 7 * 24 * 60 * 60; 
+          // 🚀 প্রোডাকশনে ভিন্ন ডোমেন যেন কুকি সেভ করতে পারে, তাই পাথ সহ কনফিগারেশন সেট করা হলো
+          document.cookie = `token=${clientToken}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
         }
 
-        // 👑 FIX 3: Next.js মেমরি ফ্লাশ করে হার্ড রিডাইরেক্ট গেটওয়ে
-        // 'router.push' এর বদলে উইন্ডো লোকেশন ব্যবহার করায় ড্যাশবোর্ডে গিয়ে আর ম্যানুয়াল রিফ্রেশ লাগবে না!
+        // 👑 FIX 3: Next.js মেমরি রিফ্রেশ গেটওয়ে
+        // সফল লগইনের পর সরাসরি হোমপেজে ("/") পুশ করে দেওয়া হলো, যাতে নেভবার ডাটা ইনস্ট্যান্ট আপডেট হয়
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = "/";
         }, 600);
 
       } else {
@@ -77,7 +84,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100-80px)] flex items-center justify-center p-4 sm:p-8 bg-slate-50/30">
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 sm:p-8 bg-slate-50/30">
       <div className="w-full max-w-md bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-100/40 space-y-6">
         
         {/* 📝 হেডার কন্টেন্ট */}
@@ -140,7 +147,6 @@ export default function LoginPage() {
                 placeholder="••••••••••••"
                 className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200/60 rounded-xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm"
               />
-              {/* পাসওয়ার্ডের চোখ আইকন টগল করার লজিক */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
