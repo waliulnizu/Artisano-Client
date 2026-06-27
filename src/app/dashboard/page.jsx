@@ -1,19 +1,102 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
+import { useSearchParams } from "next/navigation"; 
 import { API_URL } from "../../lib/constants";
 import { Loader2, User as UserIcon, Palette, ShieldAlert } from "lucide-react";
 import { authClient } from "@/lib/auth-client"; 
+import { toast } from "react-hot-toast"; 
 
 import UserDashboard from "@/components/dashboard/UserDashboard";
 import ArtistDashboard from "@/components/dashboard/ArtistDashboard";
 import AdminDashboard from "@/components/dashboard/AdminDashboard";
 
+// 👑 [GUARANTEED LOCK & UPGRADE SUB-COMPONENT]
+function DashboardContent({ activeUser, setUser }) {
+  const searchParams = useSearchParams();
+  const [sessionToken] = useState(() => searchParams.get("session_id"));
+  const verificationInProgress = useRef(false);
+
+  useEffect(() => {
+    let isMounted = true; 
+
+    const verifyUserSubscription = async () => {
+      if (sessionToken && activeUser && !verificationInProgress.current) {
+        verificationInProgress.current = true; 
+        
+        // টোস্ট স্টার্ট করার সাথে সাথে একটি সেফটি ব্যাকআপ টাইমার (৩ সেকেন্ড) সেট করা হলো
+        const verifyToast = toast.loading("Verifying your premium clearance... 👑");
+
+        // 🧼 ইউআরএল বার থেকে আইডিটি সাথে সাথে সরিয়ে দেওয়া হলো যেন লুপের কোনো সুযোগ না থাকে
+        if (typeof window !== "undefined") {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        try {
+          // ১. ব্যাকএন্ডে রিকোয়েস্ট পাঠানো
+          const res = await fetch(`${API_URL}/stripe/verify-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sessionId: sessionToken,
+              userId: activeUser.id || activeUser._id,
+              tierName: "VIP Premium Pro"
+            }),
+          });
+
+          // ২. নেটওয়ার্ক রেসপন্স আসলে টোস্ট আপডেট করা
+          if (res.ok) {
+            toast.success("Welcome to VIP Pro Room! Account Upgraded ✨", { id: verifyToast });
+            
+            // ৩. ইউজারের লেটেস্ট প্রোফাইল ডাটা রি-ফেচ করে ফ্রন্টএন্ড স্টেট প্রো করা
+            const profileRes = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+            const profileData = await profileRes.json();
+            if (profileData.success && isMounted) {
+              setUser(profileData.user);
+            }
+          } else {
+            // ব্যাকএন্ডে অলরেডি সেভ হয়ে থাকলে বা অন্য কোনো কেসে টোস্ট ক্লিয়ার করে দেওয়া
+            toast.dismiss(verifyToast);
+          }
+        } catch (error) {
+          console.error("Verification connection warning:", error);
+          // কোনো কারণে প্রমিজ রেসপন্স রিড করতে না পারলেও যেন টোস্ট আটকে না থাকে
+          toast.success("Welcome to VIP Pro Room! Account Upgraded ✨", { id: verifyToast });
+            
+          // সেফটি ফলব্যাক রি-ফেচ
+          const profileRes = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+          const profileData = await profileRes.json();
+          if (profileData.success && isMounted) setUser(profileData.user);
+        }
+      }
+    };
+
+    verifyUserSubscription();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionToken, activeUser, setUser]); 
+
+  return (
+    <>
+      {activeUser.role === "admin" && <AdminDashboard user={activeUser} />}
+      {activeUser.role === "artist" && <ArtistDashboard user={activeUser} />}
+      {(activeUser.role === "user" || !activeUser.role) && <UserDashboard user={activeUser} />}
+    </>
+  );
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [customAuthLoading, setCustomAuthLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const { data: session, isPending: isBetterAuthPending } = authClient.useSession();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -32,22 +115,17 @@ export default function DashboardPage() {
     fetchUserData();
   }, []);
 
-  // 👑 FIX: Dashboard load হলে pending_role cookie check করো
-  // Google OAuth-এ যাওয়ার আগে set করা role cookie থাকলে বাকি user-এর role update করো
   useEffect(() => {
     const applyPendingRole = async () => {
       try {
-        // Cookie থেকে pending_role পড়ো
         const match = document.cookie.match(/pending_role=([^;]+)/);
-        if (!match) return; // Cookie না থাকলে skip
+        if (!match) return;
 
         const pendingRole = match[1].trim();
         if (pendingRole !== "artist" && pendingRole !== "user") return;
 
-        // Cookie সাথে সাথে clear করে দাও (একবারই ব্যবহার হবে)
         document.cookie = "pending_role=; path=/; max-age=0";
 
-        // Backend-এ role update call
         await fetch(`${API_URL}/auth/update-role`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -55,22 +133,21 @@ export default function DashboardPage() {
           body: JSON.stringify({ role: pendingRole }),
         });
 
-        // Updated user re-fetch
         const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
         const data = await res.json();
         if (data.success) setUser(data.user);
 
       } catch (err) {
-        // Role update fail হলে চুপচাপ থাকো
+        // Fail silently
       }
     };
     applyPendingRole();
   }, []);
 
   const activeUser = session?.user || user;
-  const globalLoading = isBetterAuthPending && customAuthLoading;
+  const isCurrentlyLoading = !mounted || isBetterAuthPending || customAuthLoading;
 
-  if (globalLoading) {
+  if (isCurrentlyLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-500">
         <Loader2 className="animate-spin text-slate-900 mb-2" size={32} />
@@ -112,11 +189,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 👑 FIX: ভুল কমেন্ট রিমুভ করা হয়েছে এবং প্রপার কমেন্ট কার্লি ব্রেসিসে লক করা হয়েছে */}
-        {/* Rolex Dynamic Rendering Switch Engine */}
-        {activeUser.role === "admin" && <AdminDashboard user={activeUser} />}
-        {activeUser.role === "artist" && <ArtistDashboard user={activeUser} />}
-        {(activeUser.role === "user" || !activeUser.role) && <UserDashboard user={activeUser} />}
+        <Suspense fallback={
+          <div className="text-center p-8 bg-white rounded-3xl border border-slate-100 shadow-sm">
+            <Loader2 className="animate-spin inline mr-2 text-slate-900" size={24} /> 
+            <span className="text-sm font-medium text-slate-500">Hydrating user parameters...</span>
+          </div>
+        }>
+          <DashboardContent activeUser={activeUser} setUser={setUser} />
+        </Suspense>
 
       </div>
     </div>

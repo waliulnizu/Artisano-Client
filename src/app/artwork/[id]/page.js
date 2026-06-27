@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { API_URL } from "@/lib/constants";
-import { ShoppingCart, Calendar, ShieldCheck, Loader2 } from "lucide-react";
+import { ShoppingCart, Calendar, ShieldCheck, Loader2, Download } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-// 🚀 মডুলার সাব-কম্পোনেন্ট সমূহ (যা উইই ডিজাইনকে আইসোলেটেড রাখবে)
+// 🚀 মডুলার সাব-কম্পোনেন্ট সমূহ
 import CommentSection from "@/components/comment/CommentSection";
 import WishlistButton from "@/components/wishlist/WishlistButton";
 import ReviewSection from "@/components/review/ReviewSection";
@@ -18,20 +18,15 @@ export default function ArtworkDetailsPage() {
   const [buyLoading, setBuyLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // ==========================================
-  // 📥 ১. ইউজার সেশন ও সিঙ্গেল আর্ট ডাটা ফেচিং পাইপলাইন
-  // ==========================================
   useEffect(() => {
     const initPageData = async () => {
       try {
-        // উইশলিস্ট ও অথর লজিক রেন্ডার করতে গ্লোবাল ইউজার সেশন ফেচ
         const userRes = await fetch(`${API_URL}/auth/me`, { method: "GET", credentials: "include" });
         if (userRes.ok) {
           const userData = await userRes.json();
           if (userData.success) setCurrentUser(userData.user);
         }
 
-        // নেটিভ মেথডে সিঙ্গেল আর্ট ডাটা রিকোয়েস্ট (উইশলিস্ট বাটন সিঙ্ক করার জন্য)
         const artRes = await fetch(`${API_URL}/content/${id}`, { method: "GET", credentials: "include" });
         if (artRes.ok) {
           const artData = await artRes.json();
@@ -51,43 +46,47 @@ export default function ArtworkDetailsPage() {
   }, [id]);
 
   // ==========================================
-  // 💳 ২. লাইভ ডাইনামিক পেমেন্ট হ্যান্ডলার 
+  // 💳 ২. লাইভ স্ট্রাইক ওয়ান-টাইম পেমেন্ট ইঞ্জিন
   // ==========================================
   const handleBuyArtwork = async () => {
-    // 🛡️ ওনারশিপ বাইপাস চেক: নিজের আর্ট নিজে কেনা লক
     if (currentUser && artwork && artwork.author?._id === currentUser._id) {
       toast.error("Security Block: You cannot purchase your own uploaded artwork!");
       return;
     }
 
     setBuyLoading(true);
-    toast.loading("Connecting secure checkout pipeline... 💳", { id: "buy-art" });
+    const stripeToast = toast.loading("Connecting secure checkout pipeline... 💳");
     
     try {
-      const res = await fetch(`${API_URL}/payment/buy-artwork/${id}`, {
+      // 🚀 আমাদের নতুন তৈরি করা এক্সপ্রেস এপিআই এন্ডপয়েন্টে হিট করা হচ্ছে
+      const res = await fetch(`${API_URL}/stripe/create-single-purchase-session`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artworkId: artwork._id,
+          price: artwork.price,
+          title: artwork.title
+        })
       });
 
       const responseData = await res.json();
 
-      if (res.ok && responseData.success) {
-        toast.success(`Stripe Gateway Connected! Target ID: ${responseData.id} ✨`, { id: "buy-art" });
+      if (res.ok && responseData.success && responseData.url) {
+        toast.success("Redirecting to Stripe security vault... ✨", { id: stripeToast });
+        // 🌍 স্ট্রাইপ পেমেন্ট সিকিউর পেজে রিডাইরেক্ট
+        window.location.href = responseData.url;
       } else {
-        toast.error(responseData.message || "Checkout execution route failed.", { id: "buy-art" });
+        toast.error(responseData.message || "Checkout execution route failed.", { id: stripeToast });
       }
     } catch (error) {
       console.error("Purchase Error:", error);
-      toast.error("Payment gateway communication route not found.", { id: "buy-art" });
+      toast.error("Payment gateway communication failed.", { id: stripeToast });
     } finally {
       setBuyLoading(false);
     }
   };
 
-  // ==========================================
-  // 🛡️ ৩. ডিফেন্সিভ লোডিং গার্ডস
-  // ==========================================
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -106,15 +105,12 @@ export default function ArtworkDetailsPage() {
 
   const isAuthor = currentUser && artwork.author?._id === currentUser._id;
 
-  // ==========================================
-  // 🖼️ ৪. ফাইনাল ভিজ্যুয়াল রিপ্রেজেন্টেশন (JSX View)
-  // ==========================================
   return (
     <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8 text-slate-800">
       
       <div className="max-w-6xl mx-auto bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-8 p-6 sm:p-8">
         
-        {/* 🖼️ বাম পাশ: হাই-রেজুলেশন ইমেজ গ্যালারি */}
+        {/* 🖼️ বাম পাশ: ইমেজ গ্যালারি */}
         <div className="w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden bg-slate-50 border relative">
           <img src={artwork.featuredImage} alt={artwork.title} className="w-full h-full object-cover hover:scale-[1.01] transition-transform duration-300" />
           
@@ -129,15 +125,13 @@ export default function ArtworkDetailsPage() {
           )}
         </div>
 
-        {/* 📝 ডান পাশ: কন্টেন্ট স্পেসিফিকেশন ও বাই বাটন */}
+        {/* 📝 ডান পাশ: স্পেসিফিকেশন */}
         <div className="flex flex-col justify-between py-2">
           <div>
             <div className="flex items-center justify-between w-full">
               <span className="bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
                 {artwork.category}
               </span>
-              
-              {/* ❤️ উইশলিস্ট বাটন নোড */}
               <WishlistButton artworkId={id} />
             </div>
 
@@ -155,7 +149,7 @@ export default function ArtworkDetailsPage() {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Asset Commercial Value</p>
-                <p className="text-3xl font-black text-slate-900 mt-0.5">${artwork.price || "15.00"} <span className="text-xs text-slate-400 font-medium">USD</span></p>
+                <p className="text-3xl font-black text-slate-900 mt-0.5">${artwork.price || "0"} <span className="text-xs text-slate-400 font-medium">USD</span></p>
               </div>
               <div className="text-right text-xs font-bold text-slate-400 space-y-0.5">
                 <p className="flex items-center gap-1 justify-end text-emerald-600"><ShieldCheck size={14} /> Verified Original</p>
@@ -163,31 +157,43 @@ export default function ArtworkDetailsPage() {
               </div>
             </div>
 
-            <button
-              onClick={handleBuyArtwork}
-              disabled={buyLoading || artwork.isSold || isAuthor}
-              className={`w-full font-black py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm ${
-                artwork.isSold || isAuthor
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
-                  : "bg-slate-900 hover:bg-slate-800 text-white hover:scale-[1.01] active:scale-[0.99]"
-              }`}
-            >
-              {buyLoading ? (
-                <><Loader2 size={16} className="animate-spin text-amber-400" /> Connecting Stripe Gate...</>
-              ) : artwork.isSold ? (
-                "Artwork Unavailable (Sold)"
-              ) : isAuthor ? (
-                "Your Own Artwork"
-              ) : (
-                <><ShoppingCart size={16} /> Instant Secure Purchase</>
-              )}
-            </button>
+            {/* 👑 কন্ডিশনাল বাটন রেন্ডারিং মেকানিজম (ফিক্সড) */}
+            {artwork.price === 0 || artwork.isFree ? (
+              <a 
+                href={artwork.downloadUrl || "#"} 
+                target="_blank"
+                rel="noreferrer"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm transition-all"
+              >
+                <Download size={16} /> Download Free Resource 📥
+              </a>
+            ) : (
+              <button
+                onClick={handleBuyArtwork}
+                disabled={buyLoading || artwork.isSold || isAuthor}
+                className={`w-full font-black py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm ${
+                  artwork.isSold || isAuthor
+                    ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
+                    : "bg-slate-900 hover:bg-slate-800 text-white hover:scale-[1.01] active:scale-[0.99]"
+                }`}
+              >
+                {buyLoading ? (
+                  <><Loader2 size={16} className="animate-spin text-amber-400" /> Connecting Stripe Gate...</>
+                ) : artwork.isSold ? (
+                  "Artwork Unavailable (Sold)"
+                ) : isAuthor ? (
+                  "Your Own Artwork"
+                ) : (
+                  <><ShoppingCart size={16} /> Instant Secure Purchase 🛒</>
+                )}
+              </button>
+            )}
+
             <p className="text-[10px] text-center text-slate-400 mt-3">Payments encrypted securely. 100% Artist Proceeds Royalty Protected.</p>
           </div>
         </div>
       </div>
 
-      {/* 💬 মডুলার লাইভ কমেন্ট ও রিভিউ পার্ট (আইসোলেটেড আর্কিটেকচার) */}
       <div className="max-w-6xl mx-auto px-2 sm:px-4 space-y-10">
         <ReviewSection artworkId={id} />
         <CommentSection artworkId={id} />
