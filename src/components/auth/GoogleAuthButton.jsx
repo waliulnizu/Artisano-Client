@@ -17,7 +17,9 @@ export default function GoogleAuthButton({ currentSelectedRole = "user" }) {
 
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: `http://localhost:3000/dashboard`,
+        // 👑 FIX: হার্ডকোড করা লোকালহোস্টের বদলে ডাইনামিক অরিজিন ব্যবহার করা হলো 
+        // এতে Vercel থেকে লগইন করলে Vercel-এই ফিরে আসবে, আর লোকাল থেকে করলে লোকালে।
+        callbackURL: `${window.location.origin}/dashboard`,
       });
 
     } catch (error) {
