@@ -24,16 +24,14 @@ function DashboardContent({ activeUser, setUser }) {
       if (sessionToken && activeUser && !verificationInProgress.current) {
         verificationInProgress.current = true; 
         
-        // টোস্ট স্টার্ট করার সাথে সাথে একটি সেফটি ব্যাকআপ টাইমার (৩ সেকেন্ড) সেট করা হলো
         const verifyToast = toast.loading("Verifying your premium clearance... 👑");
 
-        // 🧼 ইউআরএল বার থেকে আইডিটি সাথে সাথে সরিয়ে দেওয়া হলো যেন লুপের কোনো সুযোগ না থাকে
         if (typeof window !== "undefined") {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
         
         try {
-          // ১. ব্যাকএন্ডে রিকোয়েস্ট পাঠানো
+          // ১. ব্যাকএন্ডে রিকোয়েস্ট পাঠানো
           const res = await fetch(`${API_URL}/stripe/verify-payment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -55,15 +53,12 @@ function DashboardContent({ activeUser, setUser }) {
               setUser(profileData.user);
             }
           } else {
-            // ব্যাকএন্ডে অলরেডি সেভ হয়ে থাকলে বা অন্য কোনো কেসে টোস্ট ক্লিয়ার করে দেওয়া
             toast.dismiss(verifyToast);
           }
         } catch (error) {
           console.error("Verification connection warning:", error);
-          // কোনো কারণে প্রমিজ রেসপন্স রিড করতে না পারলেও যেন টোস্ট আটকে না থাকে
           toast.success("Welcome to VIP Pro Room! Account Upgraded ✨", { id: verifyToast });
             
-          // সেফটি ফলব্যাক রি-ফেচ
           const profileRes = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
           const profileData = await profileRes.json();
           if (profileData.success && isMounted) setUser(profileData.user);
@@ -98,10 +93,19 @@ export default function DashboardPage() {
     setMounted(true);
   }, []);
 
+  // 👑 [FIXED]: ক্রস-ডোমেন হেডার ও ক্রেডেনশিয়াল চেইন এনফোর্সমেন্ট
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+        const res = await fetch(`${API_URL}/auth/me`, { 
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          credentials: "include" // 🚀 লাইভ সার্ভারে কুকি ভিত্তিক টোকেন পড়ার জন্য এটি মাস্ট
+        });
+        
         const data = await res.json();
         if (data.success) {
           setUser(data.user);
@@ -194,7 +198,7 @@ export default function DashboardPage() {
             <Loader2 className="animate-spin inline mr-2 text-slate-900" size={24} /> 
             <span className="text-sm font-medium text-slate-500">Hydrating user parameters...</span>
           </div>
-        }>
+         }>
           <DashboardContent activeUser={activeUser} setUser={setUser} />
         </Suspense>
 
