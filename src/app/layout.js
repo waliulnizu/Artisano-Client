@@ -3,6 +3,8 @@ import Navbar from "@/components/layout/Navbar"; // 📌 ১. Navbar ইমপ�
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
+import Footer from "@/components/layout/Footer"; // 📌 ফুটার ইমপোর্ট করা হলো
+
 export const metadata = {
   title: "Artisano",
   description: "Join our community of artists and art lovers",
@@ -27,6 +29,9 @@ export default function RootLayout({ children }) {
             {children}
           </main>
 
+          {/* 📌 ফুটার যুক্ত করা হলো */}
+          <Footer />
+          
         </ThemeProvider>
 
       </body>
