@@ -81,8 +81,8 @@ export default function PublicHomepage() {
         }
       }
     } catch (error) {
-      if (error.response && error.response.status === 403) {
-        toast("👑 This exclusive resource is for Premium Pro members only!", {
+      if (error.response && (error.response.status === 403 || error.response.status === 401)) {
+        toast(error.response.status === 401 ? "🔒 Please login to access Premium resources!" : "👑 This exclusive resource is for Premium Pro members only!", {
           duration: 5500,
           position: "top-center",
           style: {
