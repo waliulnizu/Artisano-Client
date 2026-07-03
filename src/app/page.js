@@ -6,8 +6,9 @@ import { API_URL } from "@/lib/constants";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-// 🚀 আলাদা ফাইল থেকে আসা ArtCard কম্পোনেন্ট ইম্পোর্ট
+// 🚀 আলাদা ফাইল থেকে আসা কম্পোনেন্ট ইম্পোর্ট
 import ArtCard from "@/components/ArtCard";
+import HomeSkeleton from "@/components/HomeSkeleton";
 
 export default function PublicHomepage() {
   const [content, setContent] = useState([]);
@@ -94,13 +95,8 @@ export default function PublicHomepage() {
     }
   };
 
-  // 🌙 লোডিং স্ক্রিনে ডার্ক মোড সাপোর্ট যুক্ত করা হলো
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 transition-colors duration-300">
-        <div className="w-10 h-10 border-4 border-blue-600 dark:border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <HomeSkeleton />;
   }
 
   return (

@@ -139,7 +139,7 @@ export default function Navbar() {
                     <img
                       src={currentUser.image || "https://i.ibb.co/4pDNDk1/avatar.png"} 
                       alt={currentUser.name}
-                      className="w-8 h-8 rounded-full border border-slate-200 dark:border-zinc-700 object-cover shadow-sm hidden sm:inline group-hover:border-blue-400 transition-all"
+                      className="w-8 h-8 rounded-full border border-slate-200 dark:border-zinc-700 object-cover shadow-sm group-hover:border-blue-400 transition-all"
                     />
                     <div className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-full p-0.5 shadow-sm hidden md:block group-hover:rotate-45 transition-transform duration-300">
                       <Settings size={8} className="text-slate-500 dark:text-zinc-400 group-hover:text-blue-600" />
