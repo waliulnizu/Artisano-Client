@@ -8,6 +8,7 @@ import { API_URL } from "@/lib/constants";
 import { Crown, LayoutDashboard, LogOut, Settings, Compass, Sun, Moon } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useTheme } from "@/components/ThemeProvider";
+import NavbarSkeleton from "./NavbarSkeleton";
 
 export default function Navbar() {
   const router = useRouter();
@@ -47,6 +48,10 @@ export default function Navbar() {
 
   const currentUser = session?.user || customUser;
   const globalLoading = isBetterAuthPending || customLoading;
+
+  if (globalLoading) {
+    return <NavbarSkeleton />;
+  }
 
   const handleLogout = async () => {
     try {
