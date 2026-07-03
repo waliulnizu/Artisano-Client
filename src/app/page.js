@@ -1,14 +1,55 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import axios from "axios";
 import { API_URL } from "@/lib/constants";  
 import { toast } from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // 🚀 আলাদা ফাইল থেকে আসা কম্পোনেন্ট ইম্পোর্ট
 import ArtCard from "@/components/ArtCard";
 import HomeSkeleton from "@/components/HomeSkeleton";
+
+function PaymentVerificationHandler({ currentUser, setCurrentUser }) {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+  const paymentSuccess = searchParams.get("payment_success");
+  const router = useRouter();
+  
+  // 🛡️ API কল মাল্টিপল বার যেন ট্রিগার না হয় তার জন্য রিফ লক
+  const verificationFired = useRef(false);
+
+  useEffect(() => {
+    if (paymentSuccess && sessionId && currentUser && !verificationFired.current) {
+      verificationFired.current = true; // Lock immediately to prevent duplicate runs
+      
+      // 🚀 ব্যাকঅ্যান্ডের এপিআই কল করে ডাটাবেস আপডেট করা
+      axios.post(`${API_URL}/stripe/verify-payment`, {
+        sessionId,
+        userId: currentUser._id || currentUser.id,
+        tierName: "VIP Premium Pro"
+      })
+      .then(() => {
+        toast.success("👑 VIP Membership Activated! Enjoy Premium Assets.");
+        
+        // 🚀 ইনস্ট্যান্ট স্টেট আপডেট (কোনো হার্ড রিফ্রেশ ছাড়াই)
+        setCurrentUser(prev => ({
+          ...prev,
+          isPremium: true,
+          subscriptionTier: "pro"
+        }));
+        
+        // URL থেকে ক্যোয়ারি প্যারামিটার সরাতে replace ব্যবহার করা হলো
+        router.replace("/");
+      })
+      .catch(() => toast.error("Verification pending."));
+    }
+  }, [paymentSuccess, sessionId, currentUser, setCurrentUser, router]);
+
+  return null;
+}
+
+
 
 export default function PublicHomepage() {
   const [content, setContent] = useState([]);
@@ -111,6 +152,9 @@ export default function PublicHomepage() {
     // 👑 [THE MAIN BG FIX]: মেইন রুট কন্টেইনারে dark:bg-zinc-950 এবং কালার ট্রানজিশন ম্যাপ করা হলো
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 py-12 px-4 sm:px-6 transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
+        <Suspense fallback={null}>
+          <PaymentVerificationHandler currentUser={currentUser} setCurrentUser={setCurrentUser} />
+        </Suspense>
 
         {/* Hero Banner */}
         <div className="text-center mb-12">
