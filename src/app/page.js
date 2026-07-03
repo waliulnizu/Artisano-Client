@@ -20,12 +20,16 @@ export default function PublicHomepage() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const userRes = await axios.get(`${API_URL}/auth/me`, { withCredentials: true }).catch(() => null);
+        // 🚀 Parallel API fetching to fix slow load time
+        const userPromise = axios.get(`${API_URL}/auth/me`, { withCredentials: true }).catch(() => null);
+        const dataPromise = axios.get(`${API_URL}/content/public-data`, { withCredentials: true });
+
+        const [userRes, response] = await Promise.all([userPromise, dataPromise]);
+
         if (userRes && userRes.data.success) {
           setCurrentUser(userRes.data.user);
         }
 
-        const response = await axios.get(`${API_URL}/content/public-data`, { withCredentials: true });
         if (response.data.success) {
           setContent(response.data.data);
         }
