@@ -91,7 +91,11 @@ export default function PublicHomepage() {
           }
         });
         setTimeout(() => {
-          router.push("/premium");
+          if (error.response.status === 401) {
+            router.push("/login");
+          } else {
+            router.push("/premium");
+          }
         }, 1500);
       }
     } finally {
