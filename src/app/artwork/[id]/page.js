@@ -20,7 +20,7 @@ export default function ArtworkDetailsPage() {
   const { id } = useParams();
   
   // ⚡ হুক থেকে এক লাইনে সমস্ত ডেটা এবং ফাংশন এক্সট্রাক্ট করা হলো
-  const { artwork, loading, buyLoading, isAuthor, canComment, handleBuyArtwork } = useArtworkDetails(id);
+  const { artwork, loading, buyLoading, isAuthor, canComment, handleBuyArtwork, currentUser, totalPurchasedArtworks } = useArtworkDetails(id);
 
   if (loading) {
     return (
@@ -55,6 +55,8 @@ export default function ArtworkDetailsPage() {
             buyLoading={buyLoading}
             isAuthor={isAuthor}
             handleBuyArtwork={handleBuyArtwork}
+            currentUser={currentUser}
+            totalPurchasedArtworks={totalPurchasedArtworks}
           />
         </div>
       </div>

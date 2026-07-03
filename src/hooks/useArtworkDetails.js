@@ -8,6 +8,7 @@ export function useArtworkDetails(id) {
   const [buyLoading, setBuyLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [hasPurchased, setHasPurchased] = useState(false);
+  const [totalPurchasedArtworks, setTotalPurchasedArtworks] = useState(0);
 
   useEffect(() => {
     const initPageData = async () => {
@@ -71,8 +72,11 @@ export function useArtworkDetails(id) {
             credentials: "include"
           });
           const checkData = await checkRes.json();
-          if (checkData.success && checkData.hasPurchased) {
-            setHasPurchased(true);
+          if (checkData.success) {
+            if (checkData.hasPurchased) setHasPurchased(true);
+            if (checkData.totalPurchasedArtworks !== undefined) {
+              setTotalPurchasedArtworks(checkData.totalPurchasedArtworks);
+            }
           }
         }
       } catch (error) {
@@ -132,6 +136,8 @@ export function useArtworkDetails(id) {
     buyLoading,
     isAuthor,
     canComment,
-    handleBuyArtwork
+    handleBuyArtwork,
+    currentUser,
+    totalPurchasedArtworks
   };
 }

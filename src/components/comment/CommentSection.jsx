@@ -13,6 +13,7 @@ export default function CommentSection({ artworkId }) {
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); // 👑 New State
 
   // 🆔 ১. সেশন আইডি হাইড্রেশন নোড (গ্লোবাল মি সিঙ্ক)
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function CommentSection({ artworkId }) {
         if (res.data.success && res.data.user) {
           const userId = res.data.user._id || res.data.user.id;
           setCurrentUserId(userId);
+          setCurrentUser(res.data.user);
         }
       } catch (error) {
         console.error("Session sync failed in comment block:", error);
@@ -115,7 +117,7 @@ export default function CommentSection({ artworkId }) {
         </h3>
       </div>
 
-      <CommentBox onCommentSubmit={handleCommentSubmit} submitLoading={submitLoading} />
+      <CommentBox onCommentSubmit={handleCommentSubmit} submitLoading={submitLoading} currentUser={currentUser} />
 
       {loading ? (
         <div className="flex items-center justify-center py-6">

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Send, Loader2 } from "lucide-react";
 
-export default function CommentBox({ onCommentSubmit, submitLoading }) {
+export default function CommentBox({ onCommentSubmit, submitLoading, currentUser }) {
   const [text, setText] = useState("");
 
   const handleSubmit = () => {
@@ -23,8 +23,12 @@ export default function CommentBox({ onCommentSubmit, submitLoading }) {
   return (
     <div className="mb-6">
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-          Join the artisan discussion
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5">
+          {currentUser?.isPremium ? (
+            <span className="text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">👑 VIP Access: You can now join the discussion</span>
+          ) : (
+            "Join the artisan discussion"
+          )}
         </label>
         
         {/* 🎨 [UI RE-DESIGN]: কালার থিম ফুললি সচল এবং লাক্সারি হোয়াইট লুকে কনভার্ট করা হলো */}
@@ -34,7 +38,7 @@ export default function CommentBox({ onCommentSubmit, submitLoading }) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown} // 🚀 কিবোর্ড অ্যাকশন লিংক করা হলো
-            placeholder="Share an appreciation or construct feedback..."
+            placeholder={currentUser?.isPremium ? "Share your feedback as a VIP member..." : "Share an appreciation or construct feedback..."}
             disabled={submitLoading}
             className="w-full bg-white text-xs sm:text-sm font-medium text-slate-800 rounded-2xl pl-5 pr-14 py-4 outline-none placeholder:text-slate-400 disabled:opacity-50"
           />

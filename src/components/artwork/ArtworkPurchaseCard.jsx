@@ -1,7 +1,7 @@
 import React from "react";
 import { Download, Loader2, ShoppingCart, ShieldCheck, Calendar } from "lucide-react";
 
-export default function ArtworkPurchaseCard({ artwork, buyLoading, isAuthor, handleBuyArtwork }) {
+export default function ArtworkPurchaseCard({ artwork, buyLoading, isAuthor, handleBuyArtwork, currentUser, totalPurchasedArtworks }) {
   return (
     <div className="mt-8 bg-slate-50 border border-slate-100 rounded-2xl p-5">
       <div className="flex justify-between items-center mb-4">
@@ -24,6 +24,31 @@ export default function ArtworkPurchaseCard({ artwork, buyLoading, isAuthor, han
         >
           <Download size={16} /> Download Free Resource 📥
         </a>
+      ) : currentUser?.isPremium ? (
+        <button
+          onClick={handleBuyArtwork}
+          disabled={buyLoading || artwork.isSold || isAuthor}
+          className={`w-full font-black py-4 rounded-2xl shadow-lg shadow-purple-200 transition-all flex items-center justify-center gap-2 text-sm ${
+            artwork.isSold || isAuthor
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-90 hover:scale-[1.01] active:scale-[0.99]"
+          }`}
+        >
+          {buyLoading ? (
+            <><Loader2 size={16} className="animate-spin text-amber-400" /> Connecting Stripe Gate...</>
+          ) : artwork.isSold ? (
+            "Artwork Unavailable (Sold)"
+          ) : isAuthor ? (
+            "Your Own Artwork"
+          ) : (
+            <>
+              <span>VIP Secure Purchase 👑</span>
+              <span className="bg-purple-800 text-[10px] px-2 py-0.5 rounded-full ml-1">
+                Slot: {9 - (totalPurchasedArtworks || 0)}/9 Available
+              </span>
+            </>
+          )}
+        </button>
       ) : (
         <button
           onClick={handleBuyArtwork}
