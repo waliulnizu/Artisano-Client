@@ -1,17 +1,56 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import axios from "axios";
 import { API_URL } from "@/lib/constants";
 import { Crown, CheckCircle2, ShieldCheck, Sparkles, Zap, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast"; // নোটিফিকেশন ফ্রেমওয়ার্ক সিঙ্ক
+import { useSearchParams, useRouter } from "next/navigation";
+
+function PremiumPaymentVerificationHandler({ currentUser, setIsPremiumUser, setContents }) {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+  const subscriptionSuccess = searchParams.get("subscription_success");
+  const router = useRouter();
+  
+  const verificationFired = useRef(false);
+
+  useEffect(() => {
+    if (subscriptionSuccess && sessionId && currentUser && !verificationFired.current) {
+      verificationFired.current = true;
+      
+      axios.post(`${API_URL}/stripe/verify-payment`, {
+        sessionId,
+        userId: currentUser._id || currentUser.id,
+        tierName: "VIP Premium Pro"
+      }, { withCredentials: true })
+      .then(() => {
+        toast.success("👑 VIP Membership Activated! Enjoy Premium Assets.");
+        setIsPremiumUser(true);
+        router.replace("/premium");
+        
+        // Fetch premium data automatically
+        axios.get(`${API_URL}/content/premium-data`, { withCredentials: true })
+          .then(res => {
+            if (res.data.success) {
+              setContents(res.data.data || res.data);
+            }
+          });
+      })
+      .catch(() => toast.error("Verification pending or failed."));
+    }
+  }, [subscriptionSuccess, sessionId, currentUser, setIsPremiumUser, router, setContents]);
+
+  return null;
+}
 
 export default function PremiumPage() {
   const [contents, setContents] = useState([]); 
   const [isPremiumUser, setIsPremiumUser] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [loadingTier, setLoadingTier] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   // 📥 ১. সেশন ভেরিফিকেশন ও ব্যাকএন্ড থেকে প্রিমিয়াম কন্টেন্ট ডাটা ফেচ
   useEffect(() => {
@@ -30,6 +69,7 @@ export default function PremiumPage() {
             setIsPremiumUser(true);
             isVip = true;
           }
+          setCurrentUser(currentUser);
         }
 
         if (isVip) {
@@ -97,6 +137,13 @@ export default function PremiumPage() {
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12 px-4 sm:px-6 lg:px-8 text-slate-800">
+        <Suspense fallback={null}>
+          <PremiumPaymentVerificationHandler 
+            currentUser={currentUser} 
+            setIsPremiumUser={setIsPremiumUser} 
+            setContents={setContents} 
+          />
+        </Suspense>
         <div className="max-w-6xl mx-auto space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <div className="inline-flex items-center gap-1.5 bg-purple-50 border border-purple-200/50 px-3 py-1.5 rounded-full text-purple-700 text-[10px] font-black tracking-widest uppercase">
@@ -144,6 +191,13 @@ export default function PremiumPage() {
   // =========================================================================
   return (
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8 text-slate-800">
+      <Suspense fallback={null}>
+        <PremiumPaymentVerificationHandler 
+          currentUser={currentUser} 
+          setIsPremiumUser={setIsPremiumUser} 
+          setContents={setContents} 
+        />
+      </Suspense>
       <div className="max-w-7xl mx-auto">
         
         {/* Header Dashboard Panel */}

@@ -96,6 +96,11 @@ export function useArtworkDetails(id) {
       return;
     }
 
+    if (!currentUser) {
+      window.location.href = "/login";
+      return;
+    }
+
     setBuyLoading(true);
     const stripeToast = toast.loading("Connecting secure checkout pipeline... 💳");
     
