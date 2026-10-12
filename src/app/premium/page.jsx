@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import axios from "axios";
 import { API_URL } from "@/lib/constants";
-import { Crown, CheckCircle2, ShieldCheck, Sparkles, Zap, ArrowLeft, Loader2 } from "lucide-react";
+import { Crown, CheckCircle2, ShieldCheck, Sparkles, Zap, ArrowLeft, ArrowRight, History, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "react-hot-toast"; // নোটিফিকেশন ফ্রেমওয়ার্ক সিঙ্ক
+import { toast } from "react-hot-toast";
 import { useSearchParams, useRouter } from "next/navigation";
 
 function PremiumPaymentVerificationHandler({ currentUser, setIsPremiumUser, setContents }) {
@@ -45,6 +45,97 @@ function PremiumPaymentVerificationHandler({ currentUser, setIsPremiumUser, setC
   return null;
 }
 
+// 👑 Shown right after a successful subscription checkout so the upgrade feels confirmed.
+function MembershipSuccessBanner() {
+  const searchParams = useSearchParams();
+
+  if (searchParams.get("subscription_success") !== "true") return null;
+
+  return (
+    <div className="mb-6 bg-gradient-to-r from-amber-50 to-white border border-amber-200/60 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
+      <span className="w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+        <Crown size={20} />
+      </span>
+      <div>
+        <p className="font-black text-sm text-slate-900">Membership activated — welcome to the VIP Pro Room 👑</p>
+        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+          Premium masterclasses are unlocked below. Any <b>artwork you acquire</b> is kept separately in your
+          private vault — jump to <b>Dashboard → Acquired Artworks</b> to see it with its provenance certificate.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// 🖼 Quick access to the collector vault, so acquired masterpieces are one click away from here.
+function MyVaultStrip() {
+  const [acquired, setAcquired] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    axios
+      .get(`${API_URL}/transactions/acquired`, { withCredentials: true })
+      .then((res) => {
+        if (alive && res.data.success) setAcquired(res.data.data || []);
+      })
+      .catch(() => {
+        if (alive) setAcquired([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const items = Array.isArray(acquired) ? acquired : [];
+
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Your Private Collection</p>
+          <p className="font-black text-sm text-slate-900 mt-0.5">
+            {acquired === null ? "Loading vault…" : `${items.length} masterpiece${items.length === 1 ? "" : "s"} acquired`}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/acquired"
+            className="inline-flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 text-white font-black text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all"
+          >
+            View Acquired Works <ArrowRight size={13} />
+          </Link>
+          <Link
+            href="/dashboard/transactions"
+            className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all"
+          >
+            <History size={13} /> Purchase History
+          </Link>
+        </div>
+      </div>
+
+      {items.length > 0 && (
+        <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+          {items.slice(0, 8).map(({ artwork }) => (
+            <Link key={artwork._id} href={`/artwork/${artwork._id}`} className="group flex-shrink-0 w-28">
+              <div className="w-28 h-20 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
+                <img
+                  src={artwork.featuredImage}
+                  alt={artwork.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <p className="text-[10px] font-bold text-slate-600 mt-1.5 truncate group-hover:text-slate-900">
+                {artwork.title}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PremiumPage() {
   const [contents, setContents] = useState([]); 
   const [isPremiumUser, setIsPremiumUser] = useState(false);
@@ -52,7 +143,6 @@ export default function PremiumPage() {
   const [loadingTier, setLoadingTier] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // 📥 ১. সেশন ভেরিফিকেশন ও ব্যাকএন্ড থেকে প্রিমিয়াম কন্টেন্ট ডাটা ফেচ
   useEffect(() => {
     const verifyAndFetch = async () => {
       try {
@@ -88,14 +178,12 @@ export default function PremiumPage() {
   }, []);
 
   // =========================================================================
-  // ⚡ [STRIPE ENGINE OVERHAUL]: নতুন লাইভ স্ট্রাইপ চেকআউট হ্যান্ডলার
   // =========================================================================
   const handleCheckoutTrigger = async (tierName) => {
     setLoadingTier(tierName);
     const stripeToast = toast.loading(`Initializing secure checkout for ${tierName}...`);
     
     try {
-      // 🚀 ব্যাকএন্ড স্ট্রাইপ এন্ডপয়েন্টে সেশন রিকোয়েস্ট ফায়ার করা
       const res = await axios.post(
         `${API_URL}/stripe/create-checkout-session`, 
         { tierName }, 
@@ -105,7 +193,6 @@ export default function PremiumPage() {
       if (res.data.success && res.data.url) {
         toast.success("Redirecting to Stripe security vault...", { id: stripeToast });
         
-        // 🌍 [REDIRECT MATRIX]: ইউজারকে আমাদের সাইট থেকে স্ট্রাইপের নিজস্ব পেমেন্ট পেজে রিডাইরেক্ট করা
         window.location.href = res.data.url;
       } else {
         throw new Error("Stripe parameters missing from gateway response.");
@@ -113,7 +200,7 @@ export default function PremiumPage() {
     } catch (error) {
       console.error("STRIPE_GATEWAY_ERROR:", error);
       toast.error(error.response?.data?.message || "Failed to initialize Stripe engine.", { id: stripeToast });
-      setLoadingTier(null); // বাটন লোডিং স্টেট অফ করা
+      setLoadingTier(null);
     }
   };
 
@@ -126,13 +213,12 @@ export default function PremiumPage() {
   }
 
   // =========================================================================
-  // 🛑 কন্ডিশন ক: ইউজার যদি প্রিমিয়াম না হয়, তবে তাকে প্রাইসিং টেবিল দেখাও
   // =========================================================================
   if (!isPremiumUser) {
     const Tiers = [
-      { name: "Starter Spark", price: "0", description: "Explore the community feed.", premium: false, icon: <Zap className="text-slate-400" size={24} />, features: ["Access Free Content", "3 Downloads/day"] },
-      { name: "VIP Premium Pro", price: "29", description: "Unlock the masterclass vaults completely.", premium: true, icon: <Crown className="text-purple-600 animate-pulse" size={24} />, features: ["Unlimited Premium Downloads", "10GB Space limit", "Verified Profile Badge"] },
-      { name: "Studio Enterprise", price: "99", description: "Agency architecture scale.", premium: false, icon: <ShieldCheck className="text-amber-400" size={24} />, features: ["Direct API Gateway", "Dedicated Node Manager"] }
+      { name: "Starter Spark", price: "0", description: "Explore the community feed.", premium: false, icon: <Zap className="text-slate-400" size={24} />, features: ["3 acquisitions / month", "3 studio uploads", "3 downloads/day"] },
+      { name: "VIP Premium Pro", price: "29", description: "Unlock the masterclass vaults completely.", premium: true, icon: <Crown className="text-purple-600 animate-pulse" size={24} />, features: ["25 acquisitions / month", "Unlimited premium downloads", "25 studio uploads", "Verified Profile Badge"] },
+      { name: "Studio Enterprise", price: "99", description: "Agency architecture scale.", premium: false, icon: <ShieldCheck className="text-amber-400" size={24} />, features: ["Unlimited acquisitions", "Unlimited uploads & downloads", "Direct API Gateway", "Dedicated Node Manager"] }
     ];
 
     return (
@@ -187,7 +273,6 @@ export default function PremiumPage() {
   }
 
   // =========================================================================
-  // 🎉 কন্ডিশন খ: ইউজার যদি VIP হয়, তবে নিচের এই আসল কোড রান হবে
   // =========================================================================
   return (
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8 text-slate-800">
@@ -211,7 +296,12 @@ export default function PremiumPage() {
           </Link>
         </div>
 
-        {/* 👥 লাইভ কন্টেন্টカード */}
+        <Suspense fallback={null}>
+          <MembershipSuccessBanner />
+        </Suspense>
+
+        <MyVaultStrip />
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {contents.map((item) => (
             <div key={item._id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col justify-between">
@@ -244,10 +334,20 @@ export default function PremiumPage() {
           ))}
         </div>
 
-        {/* যদি কন্টেন্ট শূন্য হয় তার নোটিফিকেশন */}
+        
         {contents.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
+          <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Premium Masterclasses Synced in Database Vault.</p>
+            <p className="text-xs text-slate-400 mt-3 max-w-md mx-auto leading-relaxed normal-case tracking-normal">
+              This vault lists premium masterclasses only. Masterpieces you purchase individually are always
+              preserved in your private collection.
+            </p>
+            <Link
+              href="/dashboard/acquired"
+              className="inline-flex items-center gap-1.5 mt-5 text-[11px] font-black uppercase tracking-wider bg-slate-950 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl transition-all"
+            >
+              Open Acquired Artworks <ArrowRight size={13} />
+            </Link>
           </div>
         )}
 

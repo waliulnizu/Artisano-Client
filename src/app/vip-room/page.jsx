@@ -59,7 +59,6 @@ export default function VIPRoomPage() {
   const handleCheckoutTrigger = (tierName) => {
     setLoadingTier(tierName);
     // 🎯 [FUTURE STRIPE INJECTION NODE]: 
-    // স্ট্রাইপ ইন্টিগ্রেশনের সময় এখানে আমাদের এপিআই কলটি গিয়ে ট্রিগার হবে ভাই!
     setTimeout(() => {
       alert(`Stripe Gateway connecting for ${tierName}...`);
       setLoadingTier(null);
