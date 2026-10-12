@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // ✅ Next.js <Image> দিয়ে Cloudinary ইমেজ লোড করতে hostname allowlist
     remotePatterns: [
       {
         protocol: "https",

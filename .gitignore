@@ -10,6 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
+# lockfiles (pnpm-lock.yaml is the source of truth; ignore stray npm lock)
+package-lock.json
+
 # testing
 /coverage
 
