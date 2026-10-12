@@ -67,7 +67,6 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     );
   }
 
-  // ১. লগইন করা না থাকলে লগইন পেজে পাঠিয়ে দেবে
   if (!isAuthenticated) {
     router.push("/login");
     return (
@@ -79,7 +78,6 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     );
   }
 
-  // ২. যদি স্পেসিফিক রোলের এক্সেস দরকার হয় (যেমন: শুধু Admin বা Artist এর জন্য)
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole) && userRole !== "admin") {
      return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-600 p-4 text-center">
@@ -90,6 +88,5 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     );
   }
 
-  // ৩. সব ঠিক থাকলে চিলড্রেন পেজ রেন্ডার করবে
   return children;
 }

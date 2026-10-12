@@ -1,9 +1,9 @@
 @import "tailwindcss";
-/* 🌙 Tailwind v4 এর জন্য ক্লাস-বেসড ডার্ক মোড কনফিগারেশন */
+
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
+  --background: #e9f0dc;
   --foreground: #171717;
 }
 
@@ -14,15 +14,76 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* App theme is controlled by the ThemeProvider (`dark` class on <html>),
+   never by the OS colour scheme — otherwise light UI renders over a black
+   body background when the system is in dark mode. */
+.dark {
+  --background: #09090b;
+  --foreground: #ededed;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 🎨 Serif display type used for gallery-style headings.
+   Wired to the Playfair variable exposed by next/font in app/layout.js. */
+.font-display {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+/* ---------- Custom Animations ---------- */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes float-bounce {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+
+.animate-float-bounce {
+  animation: float-bounce 3.5s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out both;
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 10s ease infinite;
+}
+
+html {
+  scroll-behavior: smooth;
 }

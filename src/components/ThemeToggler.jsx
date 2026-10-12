@@ -8,7 +8,6 @@ export default function ThemeToggler() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // React 19 ও SSR এর কারণে ফ্লিকারিং ঠেকাতে মাউন্ট চেকিং
   useEffect(() => {
     setMounted(true);
   }, []);

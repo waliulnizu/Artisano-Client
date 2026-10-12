@@ -5,25 +5,25 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client"; 
 import { API_URL } from "@/lib/constants"; 
-import { Crown, LayoutDashboard, LogOut, Settings, Compass, Sun, Moon } from "lucide-react";
+import { Crown, LayoutDashboard, LogOut, Settings, Sun, Moon } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useTheme } from "@/components/ThemeProvider";
 import NavbarSkeleton from "./NavbarSkeleton";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [customUser, setCustomUser] = useState(null);
   const [customLoading, setCustomLoading] = useState(true);
   
-  // 🌙 ডার্ক মোড স্টেট এবং মাউন্ট চেকিং
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   const { data: session, isPending: isBetterAuthPending } = authClient.useSession();
 
-  // সেশন ফেচিং এবং রিয়্যাক্ট ১৯ হাইড্রেশন ফিক্স সিঙ্ক
   useEffect(() => {
-    setMounted(true); // ক্লায়েন্ট মাউন্ট কনফর্মেশন
+    setMounted(true);
 
     const fetchCustomUser = async () => {
       setCustomLoading(true);
@@ -46,8 +46,14 @@ export default function Navbar() {
     }
   }, [isBetterAuthPending, session]);
 
-  const currentUser = session?.user || customUser;
+  const currentUser = customUser || session?.user;
   const globalLoading = isBetterAuthPending || customLoading;
+
+  // The marketing navbar is public-site chrome only. Inside the dashboard the
+  // fixed sidebar owns navigation, so the top bar is hidden (Stripe/Vercel-style).
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
 
   if (globalLoading) {
     return <NavbarSkeleton />;
@@ -73,44 +79,58 @@ export default function Navbar() {
     <nav className="bg-white dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800 p-4 sticky top-0 z-50 shadow-sm transition-colors duration-300">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         
-        {/* 🏢 বাম পাশ: লোগো এবং গ্লোবাল ব্রাউজ গ্যালারি লিংক গেটওয়ে */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-2xl font-black text-blue-600 dark:text-blue-500 tracking-tight flex-shrink-0">
+        
+        {/* Brand */}
+        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
+          <svg width="34" height="34" viewBox="0 0 40 40" fill="none" className="group-hover:rotate-6 transition-transform duration-300">
+            <path d="M20 4c-3 5-9 8-9 14a9 9 0 0018 0c0-6-6-9-9-14z" fill="url(#g1)" />
+            <path d="M20 12c-1.6 3-5 4.6-5 8a5 5 0 0010 0c0-3.4-3.4-5-5-8z" fill="white" fillOpacity="0.85" />
+            <defs>
+              <linearGradient id="g1" x1="11" y1="4" x2="29" y2="30" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#22c55e" /><stop offset="1" stopColor="#0d9488" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <span className="text-xl font-black tracking-tight text-[#4a5a3e] dark:text-white">
             Artisano
-          </Link>
+          </span>
+        </Link>
 
-          <Link
-            href="/browse"
-            className="text-slate-500 dark:text-zinc-400 font-bold hover:text-blue-600 dark:hover:text-blue-400 transition text-xs sm:text-sm flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 px-3 py-1.5 rounded-xl hidden sm:flex shadow-sm"
-          >
-            <Compass size={14} className="text-blue-500 dark:text-blue-400" />
-            Explore Gallery
-          </Link>
+        {/* Center links */}
+        <div className="hidden md:flex items-center gap-8 text-sm font-bold">
+          {[
+            { label: "Home", href: "/" },
+            { label: "Browse Artworks", href: "/browse" },
+            { label: "Pricing", href: "/premium" },
+          ].map((l) => {
+            const active = pathname === l.href;
+            return (
+              <Link
+                key={l.label}
+                href={l.href}
+                className={`relative pb-1 transition ${active ? "text-[#4a5a3e] dark:text-emerald-300 after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-full after:bg-[#7a8b5c] after:rounded-full" : "text-slate-500 dark:text-zinc-400 hover:text-[#4a5a3e] dark:hover:text-white"}`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
         </div>
 
-        {/* 🤝 ডান পাশ: সেশন কন্ট্রোল আইকন ও লিংক সমূহ */}
+        
         <div className="flex items-center gap-3 sm:gap-4">
           
-          {/* মোবাইল ডিভাইসের জন্য রেসপন্সিভ এক্সপ্লোর আইকন */}
-          <Link href="/browse" className="sm:hidden text-slate-500 dark:text-zinc-400 hover:text-blue-600 p-1.5 transition">
-            <Compass size={18} />
-          </Link>
-
-          {/* =========================================================================
-              🌙 [THEME TOGGLE SWITCH NODE]: ডার্ক মোডে Moon এবং লাইট মোডে Sun দেখাবে
-             ========================================================================= */}
+          
+          
           {mounted && (
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-xl bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border border-slate-100 dark:border-zinc-700 transition-all duration-300 hover:scale-105 cursor-pointer shadow-sm flex items-center justify-center"
+              className={`hidden md:flex items-center w-14 h-7 rounded-full transition-colors duration-300 px-1 ${theme === "dark" ? "bg-zinc-700 justify-end" : "bg-[#5a6b48] justify-start"}`}
               aria-label="Toggle Website Color Theme"
               title={theme === "dark" ? "Switch to Light Mode ☀️" : "Switch to Dark Mode 🌙"}
             >
-              {theme === "dark" ? (
-                <Moon className="h-4 w-4 text-indigo-400 animate-pulse" />
-              ) : (
-                <Sun className="h-4 w-4 text-amber-500" />
-              )}
+              <span className="w-5 h-5 rounded-full bg-white shadow flex items-center justify-center">
+                {theme === "dark" ? <Moon className="h-3 w-3 text-indigo-500" /> : <Sun className="h-3 w-3 text-amber-500" />}
+              </span>
             </button>
           )}
 
@@ -142,11 +162,12 @@ export default function Navbar() {
                 >
                   <div className="relative">
                     <img
-                      src={currentUser.image || "https://i.ibb.co/4pDNDk1/avatar.png"} 
+                      src={currentUser.profileImage || currentUser.image || "https://i.ibb.co/4pDNDk1/avatar.png"} 
                       alt={currentUser.name}
+                      onError={(e) => { e.currentTarget.src = "https://i.ibb.co/4pDNDk1/avatar.png"; }}
                       className="w-8 h-8 rounded-full border border-slate-200 dark:border-zinc-700 object-cover shadow-sm group-hover:border-blue-400 transition-all"
                     />
-                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-full p-0.5 shadow-sm hidden md:block group-hover:rotate-45 transition-transform duration-300">
+                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-full p-0.5 shadow-sm group-hover:rotate-45 transition-transform duration-300">
                       <Settings size={8} className="text-slate-500 dark:text-zinc-400 group-hover:text-blue-600" />
                     </div>
                   </div>
@@ -167,10 +188,10 @@ export default function Navbar() {
             </>
           ) : (
             <div className="flex gap-2">
-              <Link href="/login" className="px-4 py-1.5 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50 dark:hover:bg-zinc-800 transition text-sm rounded-xl">
+              <Link href="/login" className="px-4 py-2 text-slate-700 dark:text-zinc-300 font-bold hover:text-[#4a5a3e] dark:hover:text-white transition text-sm rounded-full">
                 Login
               </Link>
-              <Link href="/register" className="px-4 py-1.5 bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-sm rounded-xl text-sm transition">
+              <Link href="/register" className="px-5 py-2 bg-[#5a6b48] hover:bg-[#48573a] text-white font-bold shadow-sm rounded-full text-sm transition">
                 Sign Up
               </Link>
             </div>
@@ -178,6 +199,8 @@ export default function Navbar() {
         </div>
         
       </div>
+
+      {/* Dashboard sub-menu removed: the fixed sidebar now owns these links. */}
     </nav>
   );
 }

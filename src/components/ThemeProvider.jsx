@@ -5,7 +5,6 @@ import { createContext, useContext, useEffect, useState } from "react";
 const ThemeContext = createContext(undefined);
 
 export function ThemeProvider({ children }) {
-  // লোকাল স্টোরেজ থেকে আগের সেভ করা থিম চুজ করা (ডিফল্ট 'light')
   const [theme, setThemeState] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") || "light";
@@ -16,7 +15,6 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // Tailwind v4 এবং ডমের ক্লাস কন্ট্রোল
     if (theme === "dark") {
       root.classList.add("dark");
     } else {
@@ -37,7 +35,6 @@ export function ThemeProvider({ children }) {
   );
 }
 
-// কাস্টম হুক যাতে আমরা যেকোনো ফাইল থেকে থিম অ্যাক্সেস করতে পারি
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("useTheme must be used within a ThemeProvider");

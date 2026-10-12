@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client"; // আপনার কারেক্ট করা নতুন ক্লায়েন্ট ফাইল পাথ
+import { authClient } from "@/lib/auth-client";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -11,16 +11,12 @@ export default function GoogleAuthButton({ currentSelectedRole = "user" }) {
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
     try {
-      // 👑 FIX: Google-এ যাওয়ার আগেই role cookie-তে save করো
-      // OAuth redirect flow-এ headers/query নষ্ট হয়, কিন্তু cookie থাকে
       document.cookie = `pending_role=${currentSelectedRole}; path=/; max-age=300; SameSite=Lax`;
 
       await authClient.signIn.social({
         provider: "google",
-        // 👑 FIX: হার্ডকোড করা লোকালহোস্টের বদলে ডাইনামিক অরিজিন ব্যবহার করা হলো 
-        // এতে Vercel থেকে লগইন করলে Vercel-এই ফিরে আসবে, আর লোকাল থেকে করলে লোকালে।
         callbackURL: `${window.location.origin}/dashboard`,
-        errorCallbackURL: `${window.location.origin}/login`, // 🚨  হলেও যেন সার্ভারের লিংকে না গিয়ে ফ্রন্টএন্ডের লগইনে ফেরত আসে
+        errorCallbackURL: `${window.location.origin}/login`,
       });
 
     } catch (error) {
