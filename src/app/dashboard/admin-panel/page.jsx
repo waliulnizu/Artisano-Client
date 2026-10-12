@@ -8,27 +8,23 @@ import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// 📊 Recharts ভিত্তিক নতুন তৈরি করা সাব-কম্পোনেন্টটি ইম্পোর্ট করা হলো
 import AdminSalesChart from "@/components/admin/AdminSalesChart";
 
 export default function AdminPanelPage() {
   const [users, setUsers] = useState([]);
-  const [analyticsData, setAnalyticsData] = useState([]); // 📊 চার্টের ডেটা স্টেট
+  const [analyticsData, setAnalyticsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const router = useRouter();
 
-  // 📥 ১. সেশন ভেরিফিকেশন, ইউজার টেবিল ও অ্যানালিটিক্স চার্ট ডাটা ফেচ
   useEffect(() => {
     const fetchAdminDashboardData = async () => {
       try {
-        // ক) ইউজার লিস্ট নিয়ে আসা
         const usersRes = await axios.get(`${API_URL}/auth/admin/users`, { withCredentials: true });
         if (usersRes.data.success) {
           setUsers(usersRes.data.data);
         }
 
-        // খ) 📊 ব্যাকএন্ডের নতুন এন্ডপয়েন্ট থেকে চার্টের অ্যানালিটিক্স ডেটা নিয়ে আসা
         try {
           const analyticsRes = await axios.get(`${API_URL}/stripe/admin/sales-analytics`, { withCredentials: true });
           if (analyticsRes.data.success) {
@@ -36,7 +32,6 @@ export default function AdminPanelPage() {
           }
         } catch (chartErr) {
           console.error("Chart Data API Fetch Warning:", chartErr);
-          // চার্ট এপিআই কোনো কারণে ফেইল করলেও যেন মেইন ইউজার টেবিল ক্র্যাশ না করে
         }
 
       } catch (error) {
@@ -56,7 +51,6 @@ export default function AdminPanelPage() {
     fetchAdminDashboardData();
   }, [router]);
 
-  // 🔄 ২. রোল অথবা প্রিমিয়াম স্ট্যাটাস লাইভ আপডেট
   const handleUserUpdate = async (userId, updatedFields) => {
     setActionLoadingId(userId);
     try {
@@ -78,7 +72,7 @@ export default function AdminPanelPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+      <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-3"></div>
         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Verifying Admin Clearance...</p>
       </div>
@@ -86,7 +80,7 @@ export default function AdminPanelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8 text-slate-800">
+    <div className="text-slate-800 dark:text-zinc-100 py-2">
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header Navigation Banner */}
@@ -110,7 +104,7 @@ export default function AdminPanelPage() {
           </div>
         </div>
 
-        {/* 📊 [NEW INJECTION]: রেভিনিউ ও সেলস অ্যানালিটিক্স গ্রাফ চার্ট */}
+        
         <AdminSalesChart data={analyticsData} />
 
         {/* User Metric Counters */}

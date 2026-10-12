@@ -1,46 +1,69 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { API_URL } from "@/lib/constants";
 import SavedCollection from "./SavedCollection";
-import { User, Heart, ShoppingBag } from "lucide-react";
+import StatCard from "./StatCard";
+import { Crown, Heart, ShoppingBag } from "lucide-react";
 
 export default function UserDashboard({ user }) {
+  const [stats, setStats] = useState({ saved: null, bought: null, spent: 0 });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [wishRes, txRes] = await Promise.all([
+          axios.get(`${API_URL}/wishlist`, { withCredentials: true }).catch(() => null),
+          axios.get(`${API_URL}/transactions/my-history`, { withCredentials: true }).catch(() => null),
+        ]);
+
+        const saved = wishRes?.data?.success ? (wishRes.data.data || []).length : 0;
+        const tx = txRes?.data?.success ? txRes.data.data || [] : [];
+        const bought = tx.filter((t) => /artwork/i.test(t.packageName || "")).length;
+        const spent = tx
+          .filter((t) => t.status === "succeeded")
+          .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+
+        setStats({ saved, bought, spent });
+      } catch {
+        setStats({ saved: 0, bought: 0, spent: 0 });
+      }
+    };
+    load();
+  }, []);
+
   return (
-    <div className="space-y-10">
-      
-      {/* 📊 কুইক স্ট্যাটাস বা অ্যানালিটিক্স কার্ডস */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><User size={20} /></div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Account Tier</p>
-            <p className="text-sm font-black text-slate-800 uppercase mt-0.5">
-              {user?.isPremium ? <span className="text-amber-500">👑 Premium VIP</span> : "Standard Free User"}
-            </p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <StatCard
+          icon={Crown}
+          tone="amber"
+          label="Account Tier"
+          value={user?.isPremium ? "Premium VIP" : "Standard Free"}
+          sub={user?.isPremium ? `Plan: ${user?.subscriptionTier || "premium"}` : "Upgrade anytime for VIP access"}
+        />
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-xl"><Heart size={20} /></div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Saved Vault</p>
-            <p className="text-lg font-black text-slate-800 mt-0.5">Dynamic Collection</p>
-          </div>
-        </div>
+        <StatCard
+          icon={Heart}
+          tone="rose"
+          label="Saved Vault"
+          value={stats.saved === null ? "…" : `${stats.saved} Artwork${stats.saved === 1 ? "" : "s"}`}
+          sub="Saved from the gallery"
+        />
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 sm:col-span-2 lg:col-span-1">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><ShoppingBag size={20} /></div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Purchased Assets</p>
-            <p className="text-lg font-black text-slate-800 mt-0.5">00 Masterpieces</p>
-          </div>
-        </div>
+        <StatCard
+          icon={ShoppingBag}
+          tone="emerald"
+          label="Purchased Assets"
+          value={stats.bought === null ? "…" : `${stats.bought} Masterpiece${stats.bought === 1 ? "" : "s"}`}
+          sub={`Total investment: $${stats.spent}`}
+        />
       </div>
 
-      {/* 🎨 আপনার তৈরি করা উইশলিস্ট গ্যালারি সেকশন */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 p-5 sm:p-7 rounded-3xl border border-slate-100 dark:border-zinc-800 shadow-sm">
         <SavedCollection />
       </div>
-
     </div>
   );
 }

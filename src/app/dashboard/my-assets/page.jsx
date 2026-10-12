@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "@/lib/constants";
-import { Edit2, Trash2, ShieldCheck, Crown, Layers, Link2, X, Image, Loader2, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit2, Trash2, ShieldCheck, Crown, Layers, Link2, X, Image, Loader2, Sparkles, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import Link from "next/link";
 import { toast } from "react-hot-toast";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
 export default function MyAssetsPage() {
   const [assets, setAssets] = useState([]);
@@ -14,13 +16,11 @@ export default function MyAssetsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   
-  // 📝 এডিট মোডাল এবং ফর্ম স্টেটস
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoadingId, setDeleteLoadingId] = useState(null);
 
-  // ফর্মের ইনপুট ফিল্ড স্টেটস
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("tutorial");
@@ -30,7 +30,6 @@ export default function MyAssetsPage() {
   const [featuredImage, setFeaturedImage] = useState(null);
 
   // ==========================================
-  // 📥 ১. শুধুমাত্র এই আর্টিস্টের নিজস্ব ডেটা ফেচ করা
   // ==========================================
   const fetchMyAssets = async () => {
     try {
@@ -51,7 +50,6 @@ export default function MyAssetsPage() {
   }, []);
 
   // ==========================================
-  // 🗑️ ২. এসেট ডিলিট করার হ্যান্ডলার (Delete CRUD)
   // ==========================================
   const handleDelete = async (id) => {
     if (!window.confirm("Are you absolutely sure you want to permanently delete this artwork? 🗑️")) return;
@@ -64,7 +62,6 @@ export default function MyAssetsPage() {
         const updatedAssets = assets.filter((asset) => asset._id !== id);
         setAssets(updatedAssets);
         
-        // 🚀 [LIVE PAGINATION FIX]: কন্টেন্ট ডিলিটের পর পেজ ফাঁকা হলে অটোমেটিক আগের পেজে ব্যাক করবে
         const totalPagesAfterDelete = Math.ceil(updatedAssets.length / itemsPerPage);
         if (currentPage > totalPagesAfterDelete && currentPage > 1) {
           setCurrentPage(totalPagesAfterDelete);
@@ -79,7 +76,6 @@ export default function MyAssetsPage() {
   };
 
   // ==========================================
-  // 📝 ৩. এডিট মোডাল ওপেন করার লজিক
   // ==========================================
   const openEditModal = (asset) => {
     setSelectedAsset(asset);
@@ -94,7 +90,6 @@ export default function MyAssetsPage() {
   };
 
   // ==========================================
-  // 🚀 ৪. এসেট আপডেট/এডিট সাবমিট হ্যান্ডলার (Update CRUD)
   // ==========================================
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
@@ -131,7 +126,6 @@ export default function MyAssetsPage() {
   };
 
   // ==========================================
-  // 🔢 ৫. পেহিনেশন স্লাইস ও ম্যাথ ক্যালকুলেশন
   // ==========================================
   const totalPages = Math.ceil(assets.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -140,44 +134,60 @@ export default function MyAssetsPage() {
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: "smooth" }); // স্মুথ ইউজার এক্সপেরিয়েন্স স্ক্রলিং
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50/50">
+      <div className="min-h-[50vh] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    // 🎨 [LUXURY PREMIUM GRAPHICS BACKDROP]: গ্লসি মডার্ন ব্যাকগ্রাউন্ড থিম
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50/80 py-10 px-4 sm:px-8">
+    <div className="text-slate-800 dark:text-zinc-100">
       <div className="max-w-6xl mx-auto space-y-6">
         
-        {/* Header Dashboard Banner */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <Layers size={20} className="text-slate-900 stroke-[2.5]" /> My Studio Workspace
-            </h1>
-            <p className="text-slate-400 text-xs mt-0.5 font-medium">Manage, update, and monitor all your uploaded digital creative resources.</p>
-          </div>
-          <span className="bg-slate-900 text-white font-black text-[11px] tracking-wider uppercase px-4 py-2 rounded-xl shadow-sm">
-            Total Assets: {assets.length}
-          </span>
-        </div>
+        {/* Page header */}
+        <DashboardHeader
+          title="My Studio"
+          subtitle="Manage, update, and monitor all your uploaded digital assets in one place."
+          action={
+            <div className="flex items-center gap-2.5">
+              <span className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 font-black text-[11px] tracking-wide uppercase px-3.5 py-2.5 rounded-xl shadow-sm">
+                {assets.length} Asset{assets.length === 1 ? "" : "s"}
+              </span>
+              <Link
+                href="/dashboard/upload"
+                className="bg-[#5a6b48] hover:bg-[#4c5b3d] text-white font-black text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md shadow-[#5a6b48]/25"
+              >
+                <Sparkles size={14} /> Upload
+              </Link>
+            </div>
+          }
+        />
 
         {/* Dynamic Grid Layout */}
         {assets.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-16 text-center shadow-sm">
-            <Layers size={36} className="mx-auto text-slate-300 mb-3" />
-            <p className="text-slate-400 font-bold text-xs">You haven't uploaded any creative assets yet.</p>
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-700 p-14 text-center shadow-sm">
+            <span className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#e9f0dc] dark:bg-emerald-950/40 text-[#5a6b48] dark:text-emerald-300 mb-4">
+              <Layers size={24} />
+            </span>
+            <p className="text-slate-800 dark:text-zinc-100 font-black text-sm">Your studio is empty</p>
+            <p className="text-slate-400 dark:text-zinc-500 text-xs mt-1.5 max-w-sm mx-auto leading-relaxed">
+              Upload your first artwork, tool, or tutorial and it will appear here for buyers to discover.
+            </p>
+            <Link
+              href="/dashboard/upload"
+              className="inline-flex items-center gap-1.5 mt-6 text-xs font-black bg-[#5a6b48] hover:bg-[#4c5b3d] text-white px-5 py-2.5 rounded-xl transition-all shadow-md shadow-[#5a6b48]/25 active:scale-95"
+            >
+              <Plus size={14} /> Upload your first asset
+            </Link>
           </div>
         ) : (
           <>
-            {/* 🚀 কারেন্ট পেজের জন্য ফিল্টারড ৬টি এসেট গ্রিড */}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {currentAssets.map((asset) => (
                 <div key={asset._id} className="bg-white rounded-2xl border border-slate-100/80 p-4 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-slate-200/60 transition-all duration-300 group">

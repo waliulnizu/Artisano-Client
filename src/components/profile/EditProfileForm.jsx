@@ -7,39 +7,33 @@ import { toast } from "react-hot-toast";
 import { Camera, Loader2 } from "lucide-react";
 
 export default function EditProfileForm({ user }) {
-  // ১. স্টেট ম্যানেজমেন্ট
   const [name, setName] = useState(user?.name || "Nizu");
   const [profileImage, setProfileImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(user?.profileImage || "");
   const [loading, setLoading] = useState(false);
 
-// 📌 ম্যাজিক ট্রিক: যখনই parent থেকে user ডাটা আসবে বা আপডেট হবে, এটি ফর্মে সেট করে দেবে
   useEffect(() => {
     if (user) {
       setName(user.name || "");
-      // যদি ইউজার নতুন কোনো ছবি সিলেক্ট না করে থাকেন, তবেই ডাটাবেসের ছবি দেখাবে
       if (!profileImage) {
         setPreviewUrl(user.profileImage || "");
       }
     }
   }, [user, profileImage]);
 
-  // ২. ইমেজ ফাইল সিলেক্ট এবং লোকাল প্রিভিউ হ্যান্ডলার
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(file);
-      setPreviewUrl(URL.createObjectURL(file)); // ইমেজ লাইভ প্রিভিউ জেনারেট করা
+      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  // ৩. ফর্ম সাবমিট হ্যান্ডলার
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // ফাইল ও টেক্সট একসাথে পাঠানোর জন্য FormData অবজেক্ট
       const formData = new FormData();
       if (name) formData.append("name", name);
       if (profileImage) formData.append("profileImage", profileImage);
@@ -50,7 +44,7 @@ export default function EditProfileForm({ user }) {
         {
           withCredentials: true,
           headers: {
-            "Content-Type": "multipart/form-data", // ব্রাউজারকে ফাইল রিকোয়েস্টের সংকেত দেওয়া
+            "Content-Type": "multipart/form-data",
           },
         }
       );
@@ -72,7 +66,7 @@ export default function EditProfileForm({ user }) {
       <h3 className="text-lg font-bold text-gray-900 mb-6">Edit Profile</h3>
 
       <form onSubmit={handleSubmit}>
-        {/* 📌 নতুন যুক্ত হওয়া অংশ: প্রোফাইল পিকচার প্রিভিউ এবং আপলোড UI */}
+        
         <div className="flex flex-col items-center mb-6">
           <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gray-100 bg-gray-50 group shadow-inner">
             <img
@@ -80,7 +74,7 @@ export default function EditProfileForm({ user }) {
               alt="Profile Preview"
               className="w-full h-full object-cover"
             />
-            {/* ছবির ওপর হভার করলে এই ক্যামেরা আইকনটি আসবে */}
+            
             <label 
               htmlFor="avatar-upload" 
               className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200 cursor-pointer"
@@ -89,7 +83,7 @@ export default function EditProfileForm({ user }) {
             </label>
           </div>
           
-          {/* আসল ফাইল ইনপুট যা হাইড (hidden) করা আছে লুক সুন্দর রাখার জন্য */}
+          
           <input
             id="avatar-upload"
             type="file"
@@ -100,7 +94,7 @@ export default function EditProfileForm({ user }) {
           <span className="text-xs text-gray-400 mt-2 font-medium">Click image to change</span>
         </div>
 
-        {/* Full Name ইনপুট */}
+        
         <div className="mb-6">
           <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
           <input
@@ -113,7 +107,7 @@ export default function EditProfileForm({ user }) {
           />
         </div>
 
-        {/* সাবমিট বাটন */}
+        
         <button
           type="submit"
           disabled={loading}

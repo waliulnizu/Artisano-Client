@@ -62,12 +62,10 @@ export default function ArtistUploadPage() {
     } catch (error) {
       console.error("Upload error:", error);
       
-      // 🚀 [THE MASTER SYNC]: ব্যাকএন্ডের পাঠানো কাস্টম মেসেজ রিড করার ডাইনামিক মেকানিজম
       const serverMessage = error.response?.data?.message;
       const serverError = error.response?.data?.error;
 
       if (serverMessage) {
-        // ব্যাকএন্ডের কাস্টম লিমিট বা রোল এরর মেসেজ সরাসরি টোস্টে যাবে
         toast.error(serverMessage);
       } else if (serverError) {
         toast.error(`Server Error: ${serverError}`);
@@ -80,8 +78,7 @@ export default function ArtistUploadPage() {
   };
 
   return (
-    // 🎨 [LUXURY PREMIUM BACKDROP]: স্টুডিও থিমের সাথে ম্যাচিং লাক্সারি ব্যাকগ্রাউন্ড
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50/80 py-12 px-4 sm:px-6">
+    <div className="text-slate-800 dark:text-zinc-100">
       <div className="max-w-2xl mx-auto bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm">
 
         {/* Back Link */}

@@ -4,7 +4,6 @@ import React from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
 export default function AdminSalesChart({ data }) {
-  // যদি ডাটা না থাকে তবে ডামি বা ফলব্যাক চার্ট ডাটা (টেস্ট করার সুবিধার্থে)
   const chartData = data && data.length > 0 ? data : [
     { date: "Jun 21", Revenue: 120, Sales: 4 },
     { date: "Jun 22", Revenue: 250, Sales: 7 },
@@ -22,7 +21,7 @@ export default function AdminSalesChart({ data }) {
         <p className="text-xs text-slate-400 font-semibold mt-0.5">Live visual tracking of commercial performance over the last 7 days.</p>
       </div>
 
-      {/* 📊 ১. রেভিনিউ এরিয়া চার্ট (Revenue Growth) */}
+      
       <div className="space-y-2">
         <p className="text-xs font-black text-slate-500 uppercase tracking-wider">💰 Gross Revenue Trend (USD)</p>
         <div className="w-full h-[280px]">
@@ -46,7 +45,7 @@ export default function AdminSalesChart({ data }) {
 
       <hr className="border-slate-100" />
 
-      {/* 📊 ২. টোটাল সেলস বার চার্ট (Volume Check) */}
+      
       <div className="space-y-2">
         <p className="text-xs font-black text-slate-500 uppercase tracking-wider">📦 Sales Volume (Units Secured)</p>
         <div className="w-full h-[200px]">

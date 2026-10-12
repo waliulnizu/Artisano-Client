@@ -16,14 +16,13 @@ export default function AdminCreateContent() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "tutorial", // ডিফল্ট ভ্যালু ছোট হাতের অক্ষরে সিঙ্কড
+    category: "tutorial",
     price: "15.00",
     isPremiumOnly: true,
     resourceLink: "",
     featuredImage: null,
   });
 
-  // 📌 সিকিউরিটি গার্ড: লগইন ছাড়া এবং অ্যাডমিন ছাড়া এই পেজ অ্যাক্সেস লক করা
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
@@ -67,7 +66,6 @@ export default function AdminCreateContent() {
   };
 
   // =========================================================================
-  // 👑 FIX & OPTIMIZATION: ক্লিন এবং মেমরি-সেফ সাবমিশন ইঞ্জিন
   // =========================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,7 +76,7 @@ export default function AdminCreateContent() {
       
       data.append("title", formData.title);
       data.append("description", formData.description);
-      data.append("category", formData.category); // 🎯 অলরেডি ছোট হাতের অক্ষরে সাবমিট হবে
+      data.append("category", formData.category);
       data.append("price", formData.price);
       data.append("isPremiumOnly", formData.isPremiumOnly);
       data.append("resourceLink", formData.resourceLink);
@@ -94,7 +92,7 @@ export default function AdminCreateContent() {
 
       if (response.data.success) {
         toast.success("Artwork published successfully! 🎉");
-        router.push("/browse"); // 🚀 আপলোড সফল হলে সরাসরি ব্রাউজ গ্যালারিতে রিডাইরেক্ট করা হবে
+        router.push("/browse");
       }
     } catch (error) {
       console.error(error);
@@ -145,7 +143,7 @@ export default function AdminCreateContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-300 mb-2">Category</label>
-              {/* 👑 [FIX]: অপশন ভ্যালুগুলো সম্পূর্ণ ছোট হাতের অক্ষরে ডাটাবেস ও ফিল্টারের সাথে সিঙ্ক করা হলো */}
+              
               <select name="category" value={formData.category} onChange={handleChange} className="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm font-medium">
                 <option value="tutorial">Tutorial</option>
                 <option value="tool">Tool / Asset</option>
