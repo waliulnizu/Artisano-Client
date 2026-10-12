@@ -29,7 +29,7 @@ export default function ArtistSection({ artists }) {
           <Link
             key={a.id || `${a.name}-${index}`}
             href={`/artist/${encodeURIComponent(a.name)}`}
-            className="group relative bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-[#5a6b48]/10 hover:-translate-y-1.5 hover:border-[#b8c4a0] dark:hover:border-emerald-500/40 transition-all duration-300"
+            className="group relative bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-[#5a6b48]/10 hover:-translate-y-1.5 hover:border-[#b8c4a0] dark:hover:border-emerald-500/40 transition-all duration-300"
           >
             <div className="relative h-28 overflow-hidden">
               <img
@@ -40,7 +40,7 @@ export default function ArtistSection({ artists }) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
 
-            <div className="px-5 pb-5 -mt-10 text-center">
+            <div className="px-5 pb-5 -mt-10 text-center relative">
               <img
                 src={a.image || "https://i.ibb.co/4pDNDk1/avatar.png"}
                 alt={a.name}
