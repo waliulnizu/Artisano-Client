@@ -9,20 +9,17 @@ export default function ReviewList({ reviews, averageRating, currentUserId, onRe
   const [editRating, setEditRating] = useState(5);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // এডিট মোড অন করার ফাংশন
   const startEdit = (review) => {
     setEditingId(review._id);
     setEditComment(review.comment);
     setEditRating(review.rating);
   };
 
-  // এডিট বাতিল করার ফাংশন
   const cancelEdit = () => {
     setEditingId(null);
     setEditComment("");
   };
 
-  // আপডেট সাবমিট হ্যান্ডলার
   const handleUpdate = async (reviewId) => {
     if (!editComment.trim()) return;
     setActionLoading(true);
@@ -42,7 +39,7 @@ export default function ReviewList({ reviews, averageRating, currentUserId, onRe
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
       
-      {/* 📊 বাম পাশের এভারেজ স্কোরকার্ড */}
+      
       <div className="lg:col-span-1 bg-slate-50/50 border border-slate-100 rounded-2xl p-6 flex flex-col items-center justify-center text-center h-fit">
         <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">Average Score</h3>
         <p className="text-5xl font-black text-slate-900 tracking-tight">{averageRating}</p>
@@ -59,7 +56,7 @@ export default function ReviewList({ reviews, averageRating, currentUserId, onRe
         <p className="text-[10px] text-slate-400 font-bold">Based on {reviews.length} certified orders</p>
       </div>
 
-      {/* 💬 ডান পাশের রিভিউর তালিকা */}
+      
       <div className="lg:col-span-3 space-y-4">
         {reviews.map((review) => {
           const formattedDate = new Date(review.createdAt).toLocaleDateString("en-US", {
@@ -68,7 +65,6 @@ export default function ReviewList({ reviews, averageRating, currentUserId, onRe
             year: "numeric"
           });
 
-          // 🛡️ সিকিউরিটি চেক লজিক: এই রিভিউটি কি কারেন্টলি লগইন থাকা ইউজারের?
           const isOwnReview = currentUserId && review.user?._id === currentUserId;
           const isEditing = editingId === review._id;
 
@@ -87,7 +83,7 @@ export default function ReviewList({ reviews, averageRating, currentUserId, onRe
                   </div>
                 </div>
                 
-                {/* অ্যাকশন বাটন প্যানেল (Edit/Delete) - শুধুমাত্র ওনারের জন্য দৃশ্যমান */}
+                
                 {isOwnReview && !isEditing && (
                   <div className="flex items-center gap-2">
                     <button 
@@ -112,10 +108,10 @@ export default function ReviewList({ reviews, averageRating, currentUserId, onRe
                 )}
               </div>
 
-              {/* 🔄 কন্ডিশনাল রেন্ডারিং: এডিট মোড বনাম নরমাল ভিউ মোড */}
+              
               {isEditing ? (
                 <div className="space-y-3 pt-2">
-                  {/* ইনলাইন স্টার সিলেক্টর */}
+                  
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button key={star} type="button" onClick={() => setEditRating(star)}>
@@ -123,7 +119,7 @@ export default function ReviewList({ reviews, averageRating, currentUserId, onRe
                       </button>
                     ))}
                   </div>
-                  {/* ইনলাইন টেক্সট বক্স */}
+                  
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -148,7 +144,7 @@ export default function ReviewList({ reviews, averageRating, currentUserId, onRe
                 </div>
               ) : (
                 <>
-                  {/* নরমাল রেটিং স্টার ভিউ */}
+                  
                   <div className="flex items-center gap-0.5">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star

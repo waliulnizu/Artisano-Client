@@ -12,10 +12,9 @@ export default function CommentBox({ onCommentSubmit, submitLoading, currentUser
     setText(""); 
   };
 
-  // 👑 [NEW INTERCEPTOR]: কিবোর্ডের Enter বাটন প্রেস করলে সাবমিট হ্যান্ডলার ট্রিগার হবে
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); // লাইনের ডিফল্ট ব্রেক এড়ানো
+      e.preventDefault();
       handleSubmit();
     }
   };
@@ -31,13 +30,13 @@ export default function CommentBox({ onCommentSubmit, submitLoading, currentUser
           )}
         </label>
         
-        {/* 🎨 [UI RE-DESIGN]: কালার থিম ফুললি সচল এবং লাক্সারি হোয়াইট লুকে কনভার্ট করা হলো */}
+        
         <div className="relative flex items-center shadow-sm rounded-2xl overflow-hidden border border-slate-200/80 focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-100/50 transition-all duration-300 bg-white">
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown} // 🚀 কিবোর্ড অ্যাকশন লিংক করা হলো
+            onKeyDown={handleKeyDown}
             placeholder={currentUser?.isPremium ? "Share your feedback as a VIP member..." : "Share an appreciation or construct feedback..."}
             disabled={submitLoading}
             className="w-full bg-white text-xs sm:text-sm font-medium text-slate-800 rounded-2xl pl-5 pr-14 py-4 outline-none placeholder:text-slate-400 disabled:opacity-50"

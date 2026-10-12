@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Star, Send, Loader2 } from "lucide-react";
 
 export default function ReviewForm({ onReviewSubmit, submitLoading }) {
-  const [rating, setRating] = useState(5); // ডিফল্ট ৫-স্টার সেট করা
+  const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
 
@@ -13,14 +13,14 @@ export default function ReviewForm({ onReviewSubmit, submitLoading }) {
     if (!comment.trim() || rating === 0) return;
 
     onReviewSubmit({ rating, comment });
-    setComment(""); // সাবমিট শেষে ফর্ম খালি করা
+    setComment("");
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-slate-50/60 border border-slate-100 rounded-3xl p-6 mb-8">
       <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-4">Leave a Certified Review</h4>
       
-      {/* ⭐ ৫-স্টার সিলেকশন উইজেট লজিক */}
+      
       <div className="flex items-center gap-1.5 mb-4">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
@@ -34,7 +34,7 @@ export default function ReviewForm({ onReviewSubmit, submitLoading }) {
             <Star
               size={22}
               className="transition-colors duration-150"
-              fill={star <= (hoverRating || rating) ? "#f59e0b" : "none"} // গোল্ডেন কালার ট্র্যাকিং
+              fill={star <= (hoverRating || rating) ? "#f59e0b" : "none"}
               stroke={star <= (hoverRating || rating) ? "#f59e0b" : "#cbd5e1"}
             />
           </button>
@@ -42,7 +42,7 @@ export default function ReviewForm({ onReviewSubmit, submitLoading }) {
         <span className="text-xs font-bold text-slate-500 ml-2">({rating} out of 5)</span>
       </div>
 
-      {/* 📝 ফিডব্যাক টেক্সট এরিয়া */}
+      
       <div className="relative">
         <textarea
           rows={3}

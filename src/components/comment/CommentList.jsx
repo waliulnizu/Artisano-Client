@@ -35,7 +35,6 @@ export default function CommentList({ comments, currentUserId, onCommentUpdate, 
           year: "numeric"
         });
 
-        // 👑 🔒 বুলেটপ্রুফ আইডি সিঙ্কিং গেটওয়ে
         const commentAuthorId = comment.user?._id || comment.user || comment.userId?._id || comment.userId;
         const isOwner = commentAuthorId && currentUserId && String(commentAuthorId) === String(currentUserId);
         const isEditing = editingId === comment._id;
@@ -45,7 +44,7 @@ export default function CommentList({ comments, currentUserId, onCommentUpdate, 
             key={comment._id} 
             className="flex gap-4 p-5 rounded-2xl bg-white border border-slate-100 hover:border-slate-200/60 transition-all shadow-sm relative group"
           >
-            {/* 👤 গোল আকৃতির প্রিমিয়াম বর্ডার যুক্ত মেম্বার ইমেজ */}
+            
             <img
               src={comment.user?.profileImage || comment.userId?.profileImage || "https://i.ibb.co/4pDNDk1/avatar.png"}
               alt="Avatar"
@@ -65,7 +64,7 @@ export default function CommentList({ comments, currentUserId, onCommentUpdate, 
                   )}
                 </div>
                 
-                {/* 👑 রাইট সাইড প্রফেশনাল কন্ট্রোল প্যানেল অ্যাকশন বাটন */}
+                
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] text-slate-400 font-bold">
                     {formattedDate}
@@ -96,7 +95,7 @@ export default function CommentList({ comments, currentUserId, onCommentUpdate, 
                 </div>
               </div>
 
-              {/* কন্ডিশনাল ইনলাইন টেক্সট এডিটর ইন্টারফেস */}
+              
               {isEditing ? (
                 <div className="mt-2 space-y-2">
                   <textarea

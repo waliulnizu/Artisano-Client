@@ -15,7 +15,6 @@ export default function ReviewSection({ artworkId }) {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  // ক) কারেন্ট লগইন থাকা ইউজারের সেশন আইডি বের করা (Identity Check)
   useEffect(() => {
     const checkCurrentUser = async () => {
       try {
@@ -30,7 +29,6 @@ export default function ReviewSection({ artworkId }) {
     checkCurrentUser();
   }, []);
 
-  // খ) ডাটাবেস থেকে রিভিউ লোড করার ফাংশন
   const fetchReviews = useCallback(async () => {
     try {
       const res = await axiosInstance.get(`${API_URL}/review/artwork/${artworkId}`);
@@ -49,7 +47,6 @@ export default function ReviewSection({ artworkId }) {
     if (artworkId) fetchReviews();
   }, [artworkId, fetchReviews]);
 
-  // গ) নতুন রিভিউ ক্রিয়েট হ্যান্ডলার
   const handleReviewSubmit = async ({ rating, comment }) => {
     setSubmitLoading(true);
     try {
@@ -61,7 +58,7 @@ export default function ReviewSection({ artworkId }) {
 
       if (res.data.success) {
         toast.success("Review published successfully!");
-        fetchReviews(); // এভারেজ রেটিং আবার হিসাব করতে রি-কাল করা হলো
+        fetchReviews();
       }
     } catch (error) {
       console.error("Post Review Error:", error);
@@ -72,7 +69,6 @@ export default function ReviewSection({ artworkId }) {
     }
   };
 
-  // ✏️ ঘ) ৩ নম্বর ব্যাকএন্ড ফিচারের ফ্রন্টএন্ড রূপ (Update Request)
   const handleReviewUpdate = async ({ reviewId, rating, comment }) => {
     try {
       const res = await axiosInstance.put(
@@ -82,7 +78,7 @@ export default function ReviewSection({ artworkId }) {
       );
       if (res.data.success) {
         toast.success(res.data.message);
-        fetchReviews(); // রিয়েল-টাইমে স্কোরকার্ড আপডেট
+        fetchReviews();
       }
     } catch (error) {
       console.error("Update Review Frontend Error:", error);
@@ -90,16 +86,15 @@ export default function ReviewSection({ artworkId }) {
     }
   };
 
-  // 🗑️ ঙ) ৪ নম্বর ব্যাকএন্ড ফিচারের ফ্রন্টএন্ড রূপ (Delete Request)
   const handleReviewDelete = async (reviewId) => {
     try {
       const res = await axiosInstance.delete(`${API_URL}/review/delete`, {
-        data: { reviewId }, // 🧠 Note: এক্সিওসে ডিলিট রিকোয়েস্টের বডিতে ডাটা পাঠাতে data: {} প্রপার্টি লাগে
+        data: { reviewId },
         withCredentials: true
       });
       if (res.data.success) {
         toast.success(res.data.message);
-        fetchReviews(); // রিয়েল-টাইমে স্কোরকার্ড আপডেট ও লিস্ট থেকে মুছে দেওয়া
+        fetchReviews();
       }
     } catch (error) {
       console.error("Delete Review Frontend Error:", error);
@@ -126,9 +121,9 @@ export default function ReviewSection({ artworkId }) {
         <ReviewList 
           reviews={reviews} 
           averageRating={averageRating} 
-          currentUserId={currentUserId} // 🚀 আইডি চালান পাস করা হলো
-          onReviewUpdate={handleReviewUpdate} // 🚀 এডিট লজিক লিংক
-          onReviewDelete={handleReviewDelete} // 🚀 ডিলিট লজিক লিংক
+          currentUserId={currentUserId}
+          onReviewUpdate={handleReviewUpdate}
+          onReviewDelete={handleReviewDelete}
         />
       )}
     </div>

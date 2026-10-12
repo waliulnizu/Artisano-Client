@@ -1,77 +1,145 @@
 import React from "react";
-import { Download, Loader2, ShoppingCart, ShieldCheck, Calendar } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, BadgeCheck, Crown, Loader2, Lock, ShieldCheck, ShoppingCart, Users } from "lucide-react";
 
-export default function ArtworkPurchaseCard({ artwork, buyLoading, isAuthor, handleBuyArtwork, currentUser, totalPurchasedArtworks }) {
+export default function ArtworkPurchaseCard({
+  artwork,
+  buyLoading,
+  isAuthor,
+  handleBuyArtwork,
+  currentUser,
+  hasPurchased,
+  totalPurchasedArtworks = 0,
+  quotaLimit = 3,
+  quotaUnlimited = false,
+  quotaResetAt = null,
+  tierLabel = "Starter Spark",
+}) {
+  const isFree = artwork.price === 0 || artwork.isFree;
+  const isSoldOut = artwork.status === "sold" && !hasPurchased;
+  const collectorCount = artwork.collectorCount || 0;
+  const quotaReached = !hasPurchased && !quotaUnlimited && totalPurchasedArtworks >= quotaLimit;
+  const slotsLeft = Math.max(quotaLimit - totalPurchasedArtworks, 0);
+
+  // "Slots refresh on November 1" — the quota is a monthly window, never a life ban.
+  const resetsOn = quotaResetAt
+    ? new Date(quotaResetAt).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+    : null;
+
+  const statusPill = hasPurchased
+    ? { label: "In Your Collection", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900" }
+    : isSoldOut
+      ? { label: "Sold Out", className: "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900" }
+      : { label: "Available to Acquire", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900" };
+
   return (
-    <div className="mt-8 bg-slate-50 border border-slate-100 rounded-2xl p-5">
-      <div className="flex justify-between items-center mb-4">
+    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Asset Commercial Value</p>
-          <p className="text-3xl font-black text-slate-900 mt-0.5">${artwork.price || "0"} <span className="text-xs text-slate-400 font-medium">USD</span></p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500">
+            Acquisition Value
+          </p>
+          <p className="text-4xl font-black tracking-tight mt-1">
+            ${artwork.price || 0} <span className="text-xs font-bold text-slate-400">USD</span>
+          </p>
         </div>
-        <div className="text-right text-xs font-bold text-slate-400 space-y-0.5">
-          <p className="flex items-center gap-1 justify-end text-emerald-600"><ShieldCheck size={14} /> Verified Original</p>
-          <p className="flex items-center gap-1 justify-end"><Calendar size={14} /> Published 2026</p>
-        </div>
+        <span
+          className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border
+                      flex items-center gap-1.5 flex-shrink-0 ${statusPill.className}`}
+        >
+          <ShieldCheck size={12} /> {statusPill.label}
+        </span>
       </div>
 
-      {artwork.price === 0 || artwork.isFree ? (
-        <a 
-          href={artwork.downloadUrl || "#"} 
+      {/* ── Owned by this collector → straight into the private vault ── */}
+      {hasPurchased ? (
+        <Link
+          href="/dashboard/acquired"
+          className="mt-6 w-full bg-[#5a6b48] hover:bg-[#4c5b3d] text-white font-black py-4 rounded-2xl
+                     flex items-center justify-center gap-2 text-sm shadow-md shadow-[#5a6b48]/25 transition-all"
+        >
+          <BadgeCheck size={16} /> View in Your Collection <ArrowRight size={15} />
+        </Link>
+      ) : isFree ? (
+        /* ── Free resource ── */
+        <a
+          href={artwork.resourceLink || "#"}
           target="_blank"
           rel="noreferrer"
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm transition-all"
+          className="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl
+                     flex items-center justify-center gap-2 text-sm transition-all"
         >
-          <Download size={16} /> Download Free Resource 📥
+          Download Free Resource
         </a>
-      ) : currentUser?.isPremium ? (
-        <button
-          onClick={handleBuyArtwork}
-          disabled={buyLoading || artwork.isSold || isAuthor}
-          className={`w-full font-black py-4 rounded-2xl shadow-lg shadow-purple-200 transition-all flex items-center justify-center gap-2 text-sm ${
-            artwork.isSold || isAuthor
-              ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
-              : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-90 hover:scale-[1.01] active:scale-[0.99]"
-          }`}
-        >
-          {buyLoading ? (
-            <><Loader2 size={16} className="animate-spin text-amber-400" /> Connecting Stripe Gate...</>
-          ) : artwork.isSold ? (
-            "Artwork Unavailable (Sold)"
-          ) : isAuthor ? (
-            "Your Own Artwork"
-          ) : (
-            <>
-              <span>VIP Secure Purchase 👑</span>
-              <span className="bg-purple-800 text-[10px] px-2 py-0.5 rounded-full ml-1">
-                Slot: {9 - (totalPurchasedArtworks || 0)}/9 Available
-              </span>
-            </>
-          )}
-        </button>
+      ) : quotaReached ? (
+        /* ── Monthly acquisition quota exhausted ── */
+        <div className="mt-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-2xl p-4 text-center">
+          <p className="text-xs font-black text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1.5">
+            <Crown size={13} /> Monthly acquisition quota reached ({totalPurchasedArtworks}/{quotaLimit})
+          </p>
+          <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 mt-1.5 leading-relaxed">
+            You are on <span className="font-black">{tierLabel}</span>.
+            {resetsOn ? ` Your ${quotaLimit} slots refresh on ${resetsOn}` : " Upgrade your node for more slots"} — or
+            upgrade now to keep collecting.
+          </p>
+          <Link
+            href="/premium"
+            className="mt-3 inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white
+                       font-black text-xs px-4 py-2.5 rounded-full transition-all"
+          >
+            <Crown size={13} /> Upgrade Membership
+          </Link>
+        </div>
       ) : (
+        /* ── Ready to acquire ── */
         <button
           onClick={handleBuyArtwork}
-          disabled={buyLoading || artwork.isSold || isAuthor}
-          className={`w-full font-black py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm ${
-            artwork.isSold || isAuthor
-              ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
-              : "bg-slate-900 hover:bg-slate-800 text-white hover:scale-[1.01] active:scale-[0.99]"
-          }`}
+          disabled={buyLoading || isSoldOut || isAuthor}
+          className={`mt-6 w-full font-black py-4 rounded-2xl flex items-center justify-center gap-2 text-sm transition-all
+            ${isSoldOut || isAuthor
+              ? "bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-500"
+              : "bg-[#5a6b48] hover:bg-[#4c5b3d] text-white shadow-md shadow-[#5a6b48]/25 hover:scale-[1.01] active:scale-[0.99]"}`}
         >
           {buyLoading ? (
-            <><Loader2 size={16} className="animate-spin text-amber-400" /> Connecting Stripe Gate...</>
-          ) : artwork.isSold ? (
-            "Artwork Unavailable (Sold)"
+            <><Loader2 size={16} className="animate-spin" /> Connecting Secure Checkout…</>
+          ) : isSoldOut ? (
+            <><Lock size={15} /> Already Sold</>
           ) : isAuthor ? (
             "Your Own Artwork"
           ) : (
-            <><ShoppingCart size={16} /> Instant Secure Purchase 🛒</>
+            <><ShoppingCart size={16} /> Purchase Artworks</>
           )}
         </button>
       )}
 
-      <p className="text-[10px] text-center text-slate-400 mt-3">Payments encrypted securely. 100% Artist Proceeds Royalty Protected.</p>
+      {/* ── Reassurance line + edition / quota meta ── */}
+      <p className="text-[11px] text-center text-slate-400 dark:text-zinc-500 mt-3.5 flex items-center justify-center gap-1.5 flex-wrap">
+        <Lock size={11} /> Secure checkout via Stripe · Authenticity Guarantee · Fully Insured
+      </p>
+
+      {!isFree && !hasPurchased && (
+        <div className="mt-4 pt-4 border-t border-slate-50 dark:border-zinc-800 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-zinc-400">
+          <span className="flex items-center gap-1.5">
+            <Users size={12} className="text-[#5a6b48]" />
+            {collectorCount === 0 ? "No collector owns this edition yet" : `Owned by ${collectorCount} collector${collectorCount === 1 ? "" : "s"}`}
+          </span>
+          {currentUser && (
+            <span className="flex items-center gap-1">
+              {quotaUnlimited ? (
+                <>
+                  <Crown size={12} className="text-amber-500" />
+                  <span className="font-black text-slate-700 dark:text-zinc-200">Unlimited slots</span>
+                </>
+              ) : (
+                <>
+                  Slots left: <span className="font-black text-slate-800 dark:text-zinc-100">{slotsLeft}</span>
+                  {resetsOn && <span className="text-slate-400 dark:text-zinc-500">· resets {resetsOn}</span>}
+                </>
+              )}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

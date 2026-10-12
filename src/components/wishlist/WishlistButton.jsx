@@ -11,13 +11,11 @@ export default function WishlistButton({ artworkId }) {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
 
-  // 📥 পেজ লোড হওয়ার সময় ইনিশিয়াল স্ট্যাটাস চেক করা
   useEffect(() => {
     const checkInitialWishStatus = async () => {
       try {
         const res = await axios.get(`${API_URL}/wishlist/my-list`, { withCredentials: true });
         if (res.data.success && res.data.data) {
-          // 🧠 🚀 ফিক্সড লজিক: নতুন ডাটাবেস আর্কিটেকচার অনুযায়ী ম্যাচিং চেক
           const match = res.data.data.some(item => {
             const idToCompare = item.artworkId?._id || item._id;
             return idToCompare === artworkId;
@@ -34,7 +32,6 @@ export default function WishlistButton({ artworkId }) {
     if (artworkId) checkInitialWishStatus();
   }, [artworkId]);
 
-  // ❤️ বাটন ক্লিক করলে টগল করার মূল ফাংশন
   const handleToggle = async () => {
     if (loading) return;
     setLoading(true);
@@ -59,7 +56,6 @@ export default function WishlistButton({ artworkId }) {
     }
   };
 
-  // ইনিশিয়াল চেকিং এর সময় বাটনটি ইন-অ্যাক্টিভ রাখা (Hydration Error এড়াতে)
   if (checking) {
     return (
       <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center">
