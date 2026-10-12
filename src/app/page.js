@@ -1,45 +1,54 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef } from "react";
+import { useState, useEffect, Suspense, useRef, useMemo } from "react";
 import axios from "axios";
-import { API_URL } from "@/lib/constants";  
+import { API_URL } from "@/lib/constants";
 import { toast } from "react-hot-toast";
 import { useRouter, useSearchParams } from "next/navigation";
 
-// 🚀 আলাদা ফাইল থেকে আসা কম্পোনেন্ট ইম্পোর্ট
-import ArtCard from "@/components/ArtCard";
 import HomeSkeleton from "@/components/HomeSkeleton";
+import HeroSection from "@/components/home/HeroSection";
+import StatsBar from "@/components/home/StatsBar";
+import CategorySection from "@/components/home/CategorySection";
+import AssetSection from "@/components/home/AssetSection";
+import VipCtaSection from "@/components/home/VipCtaSection";
+import ArtistSection from "@/components/home/ArtistSection";
+import ArtistsOfMonthSection from "@/components/home/ArtistsOfMonthSection";
+import HowItWorksSection from "@/components/home/HowItWorksSection";
+import FaqSection from "@/components/home/FaqSection";
+import NewsletterSection from "@/components/home/NewsletterSection";
+import ScrollAnimator from "@/components/ScrollAnimator";
+import RecentUploadsSection from "@/components/home/RecentUploadsSection";
+import TestimonialsSection from "@/components/home/TestimonialsSection";
+import PricingSection from "@/components/home/PricingSection";
+import ArtistJoinSection from "@/components/home/ArtistJoinSection";
 
 function PaymentVerificationHandler({ currentUser, setCurrentUser }) {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const paymentSuccess = searchParams.get("payment_success");
   const router = useRouter();
-  
-  // 🛡️ API কল মাল্টিপল বার যেন ট্রিগার না হয় তার জন্য রিফ লক
+
   const verificationFired = useRef(false);
 
   useEffect(() => {
     if (paymentSuccess && sessionId && currentUser && !verificationFired.current) {
-      verificationFired.current = true; // Lock immediately to prevent duplicate runs
-      
-      // 🚀 ব্যাকঅ্যান্ডের এপিআই কল করে ডাটাবেস আপডেট করা
+      verificationFired.current = true;
+
       axios.post(`${API_URL}/stripe/verify-payment`, {
         sessionId,
         userId: currentUser._id || currentUser.id,
         tierName: "VIP Premium Pro"
       })
       .then(() => {
-        toast.success("👑 VIP Membership Activated! Enjoy Premium Assets.");
-        
-        // 🚀 ইনস্ট্যান্ট স্টেট আপডেট (কোনো হার্ড রিফ্রেশ ছাড়াই)
+        toast.success("VIP Membership Activated! Enjoy Premium Assets.");
+
         setCurrentUser(prev => ({
           ...prev,
           isPremium: true,
           subscriptionTier: "pro"
         }));
-        
-        // URL থেকে ক্যোয়ারি প্যারামিটার সরাতে replace ব্যবহার করা হলো
+
         router.replace("/");
       })
       .catch(() => toast.error("Verification pending."));
@@ -49,8 +58,6 @@ function PaymentVerificationHandler({ currentUser, setCurrentUser }) {
   return null;
 }
 
-
-
 export default function PublicHomepage() {
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,14 +65,16 @@ export default function PublicHomepage() {
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const router = useRouter();
 
+  const [artists, setArtists] = useState([]);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // 🚀 Parallel API fetching to fix slow load time
         const userPromise = axios.get(`${API_URL}/auth/me`, { withCredentials: true }).catch(() => null);
         const dataPromise = axios.get(`${API_URL}/content/public-data`, { withCredentials: true });
+        const usersPromise = axios.get(`${API_URL}/auth/public-users`).catch(() => null);
 
-        const [userRes, response] = await Promise.all([userPromise, dataPromise]);
+        const [userRes, response, usersRes] = await Promise.all([userPromise, dataPromise, usersPromise]);
 
         if (userRes && userRes.data.success) {
           setCurrentUser(userRes.data.user);
@@ -74,9 +83,12 @@ export default function PublicHomepage() {
         if (response.data.success) {
           setContent(response.data.data);
         }
+
+        if (usersRes && usersRes.data.success) {
+          setArtists(usersRes.data.data || []);
+        }
       } catch (error) {
         if (error.response && error.response.status === 401) {
-          console.log("Visitor is unauthenticated.");
           setCurrentUser(null);
         } else {
           console.error("Error loading public gallery:", error);
@@ -90,6 +102,31 @@ export default function PublicHomepage() {
     fetchInitialData();
   }, []);
 
+  const derived = useMemo(() => {
+    const list = Array.isArray(content) ? content : [];
+    const free = list.filter((i) => !i.isPremiumOnly);
+    const premium = list.filter((i) => i.isPremiumOnly);
+
+    const catMap = {};
+    list.forEach((i) => {
+      const c = (i.category || "general").toLowerCase();
+      catMap[c] = (catMap[c] || 0) + 1;
+    });
+    const categories = Object.entries(catMap).map(([name, count]) => ({ name, count }));
+
+    return {
+      free,
+      premium,
+      categories,
+      stats: {
+        total: list.length,
+        free: free.length,
+        premium: premium.length,
+        categories: categories.length,
+      },
+    };
+  }, [content]);
+
   const handleResourceAccess = async (item) => {
     if (!item) return;
 
@@ -98,7 +135,7 @@ export default function PublicHomepage() {
 
     const isIdMatched = authorId && currentUserId && (String(authorId).trim().toLowerCase() === String(currentUserId).trim().toLowerCase());
     const isNameMatched = item.author?.name && currentUser?.name && (item.author.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase());
-    
+
     const isOwnAsset = isIdMatched || isNameMatched;
 
     if (!item.isPremiumOnly || isOwnAsset) {
@@ -123,7 +160,7 @@ export default function PublicHomepage() {
       }
     } catch (error) {
       if (error.response && (error.response.status === 403 || error.response.status === 401)) {
-        toast(error.response.status === 401 ? "🔒 Please login to access Premium resources!" : "👑 This exclusive resource is for Premium Pro members only!", {
+        toast(error.response.status === 401 ? "Please login to access Premium resources!" : "This exclusive resource is for Premium Pro members only!", {
           duration: 5500,
           position: "top-center",
           style: {
@@ -149,44 +186,45 @@ export default function PublicHomepage() {
   }
 
   return (
-    // 👑 [THE MAIN BG FIX]: মেইন রুট কন্টেইনারে dark:bg-zinc-950 এবং কালার ট্রানজিশন ম্যাপ করা হলো
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 py-12 px-4 sm:px-6 transition-colors duration-300">
-      <div className="max-w-6xl mx-auto">
-        <Suspense fallback={null}>
-          <PaymentVerificationHandler currentUser={currentUser} setCurrentUser={setCurrentUser} />
-        </Suspense>
+    <div className="min-h-screen bg-[#e9f0dc] dark:bg-zinc-950 transition-colors duration-300">
+      <Suspense fallback={null}>
+        <PaymentVerificationHandler currentUser={currentUser} setCurrentUser={setCurrentUser} />
+      </Suspense>
+      <ScrollAnimator />
 
-        {/* Hero Banner */}
-        <div className="text-center mb-12">
-          {/* 🌙 টেক্সটে dark:text-white দেওয়া হলো */}
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
-            Explore Creative Art Assets 🎨
-          </h1>
-          {/* 🌙 সাবটাইটেলে dark:text-zinc-400 দেওয়া হলো */}
-          <p className="text-slate-500 dark:text-zinc-400 max-w-xl mx-auto text-sm sm:text-base">
-            Discover high-quality tutorials, premium brushes, and raw resources built by professional digital artists.
-          </p>
-        </div>
-
-        {/* Dynamic Feed Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {content && content.length > 0 ? (
-            content.map((asset) => (
-              <ArtCard 
-                key={asset._id}
-                item={asset}
-                currentUser={currentUser} 
-                actionLoadingId={actionLoadingId}
-                onResourceAccess={handleResourceAccess}
-              />
-            ))
-          ) : (
-            // 🌙 নো ডাটা টেক্সটে ডার্ক কালার সিঙ্ক
-            <p className="text-center text-slate-500 dark:text-zinc-400 col-span-full py-10">No art assets found.</p>
-          )}
-        </div>
-
-      </div>
+      <HeroSection totalAssets={derived.stats.total} totalArtists={artists.length} currentUser={currentUser} />
+      <StatsBar stats={derived.stats} />
+      <CategorySection categories={derived.categories} />
+      <AssetSection
+        title="Premium Highlights"
+        subtitle="Exclusive, high-value assets from top-rated creators."
+        items={derived.premium.slice(0, 6)}
+        currentUser={currentUser}
+        actionLoadingId={actionLoadingId}
+        onResourceAccess={handleResourceAccess}
+        emptyText="No premium assets available yet."
+        variant="premium"
+      />
+      <VipCtaSection />
+      <AssetSection
+        title="Free Resources"
+        subtitle="Open-access brushes, textures, and tutorials for everyone."
+        items={derived.free.slice(0, 6)}
+        currentUser={currentUser}
+        actionLoadingId={actionLoadingId}
+        onResourceAccess={handleResourceAccess}
+        emptyText="No free resources available yet."
+        variant="free"
+      />
+      <ArtistsOfMonthSection artists={artists} />
+      <ArtistSection artists={artists} />
+      <RecentUploadsSection items={[...(content || [])].slice(-4).reverse()} />
+      <HowItWorksSection />
+      <TestimonialsSection />
+      <PricingSection />
+      <FaqSection />
+      <ArtistJoinSection />
+      <NewsletterSection />
     </div>
   );
 }
