@@ -26,18 +26,18 @@ export default function ArtistsOfMonthSection({ artists }) {
             key={a.id || a.name}
             className="relative bg-white dark:bg-zinc-900 border border-emerald-100/60 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-2 transition-all duration-300"
           >
-            <div className="relative h-40 bg-gradient-to-br from-emerald-200/60 via-teal-100/60 to-lime-100/60 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-lime-950/20">
+            <div className="relative h-40 overflow-hidden rounded-t-[23px] bg-gradient-to-br from-emerald-200/60 via-teal-100/60 to-lime-100/60 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-lime-950/20">
               <span className="absolute top-4 right-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur text-xs font-black text-slate-700 dark:text-zinc-300 px-3 py-1.5 rounded-full border border-white/60 dark:border-zinc-700 shadow-sm">
                 #{index + 1}
               </span>
             </div>
 
-            <div className="px-6 pb-6 -mt-14 text-center relative">
+            <div className="px-6 pb-6 -mt-14 text-center relative z-10">
               <img
                 src={a.image || "https://i.ibb.co/4pDNDk1/avatar.png"}
                 alt={a.name}
                 onError={(e) => { e.currentTarget.src = "https://i.ibb.co/4pDNDk1/avatar.png"; }}
-                className="w-28 h-28 rounded-full mx-auto object-cover border-4 border-white dark:border-zinc-900 shadow-lg"
+                className="relative z-10 w-28 h-28 rounded-full mx-auto object-cover border-4 border-white dark:border-zinc-900 shadow-lg"
               />
               <h3 className="mt-4 text-lg font-black text-slate-900 dark:text-white capitalize">{a.name}</h3>
               <span className="inline-flex items-center gap-1.5 mt-2 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-500/20 px-3 py-1 rounded-full">
